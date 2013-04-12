@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bnd-LastModified: 1365800656870
+Build-Jdk: 1.7.0_15
+Built-By: reto
+Bundle-Description: Ontologies describing the services offered by ECS.
+Bundle-License: http://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Fusepool Enhanced Content Store Ontologies
+Bundle-SymbolicName: eu.fusepool.ecs.ontologies
+Bundle-Version: 0.1.0.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin
+Export-Package: eu.fusepool.ecs.ontologies;uses:="org.apache.clerezza.rd
+ f.core";version="0.1.0.SNAPSHOT"
+Import-Package: org.apache.clerezza.rdf.core
+Tool: Bnd-1.50.0

@@ -1,0 +1,22 @@
+@prefix : <http://fusepool.eu/ontologies/ecs#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix skos: <http://www.w3.org/2008/05/skos#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+
+
+: a owl:Ontology.
+
+#TODO add support for pagination and ordering
+
+:EnhancedContentStore a rdfs:Class;
+	skos:definition '''Resources of this type are associated to a set of content
+items. If the IRI denoting the resource contains query parameters
+with name "search" then the associated content item will match each of the values
+of this paramters. If the name of the resource contains query parameters 
+"subject" the associated content items will be contents having each of the 
+specified resource as subjects.'''@en.
+
+:content a rdf:Property;
+	skos:definition "Points to a content item associated to the subject."@en;
+	rdfs:Domain :EnhancedContentStore.
