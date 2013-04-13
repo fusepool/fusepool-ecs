@@ -7,16 +7,27 @@
 
 : a owl:Ontology.
 
-#TODO add support for pagination and ordering
 
-:EnhancedContentStore a rdfs:Class;
-	skos:definition '''Resources of this type are associated to a set of content
-items. If the IRI denoting the resource contains query parameters
-with name "search" then the associated content item will match each of the values
-of this paramters. If the name of the resource contains query parameters 
-"subject" the associated content items will be contents having each of the 
-specified resource as subjects.'''@en.
+:ContentStore a rdfs:Class;
+	skos:definition '''A store for content items.'''@en.
 
-:content a rdf:Property;
-	skos:definition "Points to a content item associated to the subject."@en;
-	rdfs:Domain :EnhancedContentStore.
+:ContentStoreView a rdfs:Class;
+	skos:definition '''A view on a list of contents in a ContentStore. If the IRI denoting the 
+resource contains query parameters with name "search" then the associated 
+content item will match each of the values of this parameters. If the name 
+of the resource contains query parameters "subject" the associated content 
+items will be contents having each of the specified resource as subjects. If
+the name of the resource contains a query parameter "items" the number of 
+associated content will not exceed the specified value. If
+the name of the resource contains a query parameter "offset" the specified 
+number of more relevant items will be omitted.'''@en.
+
+:contents a rdf:Property;
+	skos:definition "Points to the list content item associated to the subject."@en;
+	rdfs:domain :ContentStoreView;
+    rdfs:range rdf:List.
+
+:store a rdf:Property;
+	skos:definition "Points to the list content item associated to the subject."@en;
+	rdfs:domain :ContentStoreView;
+    rdfs:range :ContentStore.

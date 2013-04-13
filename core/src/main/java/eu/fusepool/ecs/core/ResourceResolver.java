@@ -121,7 +121,8 @@ public class ResourceResolver {
         final GraphNode node = new GraphNode(serviceUri, resultGraph);
         //The triples will be added to the first graph of the union
         //i.e. to the in-memory responseGraph
-        node.addProperty(RDF.type, ECS.EnhancedContentStore);
+        //TODO the uri if the view has always params the one of the store is the one without params
+        node.addProperty(RDF.type, ECS.ContentStoreView);
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
        
         //What we return is the GraphNode we created with a template path
