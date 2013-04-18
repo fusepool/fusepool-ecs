@@ -51,12 +51,12 @@ import org.slf4j.LoggerFactory;
 @Service(Object.class)
 @Property(name="javax.ws.rs", boolValue=true)
 @Path("ecs.core")
-public class ResourceResolver {
+public class ContentStore {
     
     /**
      * Using slf4j for normal logging
      */
-    private static final Logger log = LoggerFactory.getLogger(ResourceResolver.class);
+    private static final Logger log = LoggerFactory.getLogger(ContentStore.class);
     
     /**
      * This service allows to get entities from configures sites
@@ -71,9 +71,14 @@ public class ResourceResolver {
     private TcManager tcManager;
     
     /**
-     * This is the name of the graph in which we "log" the requests
+     * The graph in which the contents are stored together with digested metadata
      */
-    private UriRef REQUEST_LOG_GRAPH_NAME = new UriRef("http://example.org/resource-resolver-log.graph");
+    private UriRef REQUEST_LOG_GRAPH_NAME = new UriRef("urn:x-localhost:/ecs.graph");
+    
+    /**
+     * The graph in which the enancer generated enhanceents are stored 
+     */
+    private UriRef ENHANCEMENT_GRAPH = new UriRef("urn:x-localhost:/ecs.graph");
     
     @Activate
     protected void activate(ComponentContext context) {
@@ -94,7 +99,7 @@ public class ResourceResolver {
     
     @Deactivate
     protected void deactivate(ComponentContext context) {
-        log.info("The example service is being activated");
+        log.info("The Enhanced COntent Store");
     }
     
     /**
@@ -126,7 +131,7 @@ public class ResourceResolver {
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
        
         //What we return is the GraphNode we created with a template path
-        return new RdfViewable("ResourceResolver", node, ResourceResolver.class);
+        return new RdfViewable("ResourceResolver", node, ContentStore.class);
     }
     
 
