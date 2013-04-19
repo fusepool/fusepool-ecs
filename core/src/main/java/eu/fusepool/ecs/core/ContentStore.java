@@ -71,7 +71,7 @@ import org.wymiwyg.commons.util.MD5;
 @Component
 @Service(Object.class)
 @Property(name = "javax.ws.rs", boolValue = true)
-@Path("ecs.core")
+@Path("ecs")
 public class ContentStore {
 
     /**
