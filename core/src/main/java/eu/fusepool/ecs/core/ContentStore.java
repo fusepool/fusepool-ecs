@@ -1,19 +1,21 @@
 package eu.fusepool.ecs.core;
 
 import eu.fusepool.ecs.ontologies.ECS;
-import java.security.AccessController;
 import java.security.Permission;
-import java.security.PrivilegedAction;
 import java.util.Collections;
-import java.util.Date;
+import java.util.List;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import org.apache.clerezza.jaxrs.utils.TrailingSlash;
-import org.apache.clerezza.rdf.core.BNode;
+import org.apache.clerezza.platform.content.DiscobitsHandler;
 import org.apache.clerezza.rdf.core.MGraph;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
@@ -26,6 +28,7 @@ import org.apache.clerezza.rdf.ontologies.RDF;
 import org.apache.clerezza.rdf.ontologies.RDFS;
 import org.apache.clerezza.rdf.utils.GraphNode;
 import org.apache.clerezza.rdf.utils.UnionMGraph;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -34,6 +37,8 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
+import org.apache.stanbol.enhancer.servicesapi.ChainManager;
+import org.apache.stanbol.enhancer.servicesapi.EnhancementJobManager;
 import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
 import org.apache.stanbol.entityhub.servicesapi.model.Entity;
 import org.apache.stanbol.entityhub.servicesapi.model.Representation;
@@ -41,6 +46,7 @@ import org.apache.stanbol.entityhub.servicesapi.site.SiteManager;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wymiwyg.commons.util.MD5;
 
 /**
  * Uses the SiteManager to resolve entities. Every requested is recorded to
@@ -70,6 +76,9 @@ public class ContentStore {
     @Reference
     private TcManager tcManager;
     
+    @Reference
+    private DiscobitsHandler discobitsHandler;
+
     /**
      * The graph in which the contents are stored together with digested metadata
      */
@@ -79,6 +88,7 @@ public class ContentStore {
      * The graph in which the enancer generated enhanceents are stored 
      */
     private UriRef ENHANCEMENT_GRAPH = new UriRef("urn:x-localhost:/ecs.graph");
+    private final static String CONTENT_PREFIX = "content/";
     
     @Activate
     protected void activate(ComponentContext context) {
@@ -107,9 +117,10 @@ public class ContentStore {
      * presentational information.
      */
     @GET
+    //temporarily restricting till there is a templates
+    @Produces("application/rdf+xml")
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo, 
-            @QueryParam("iri") final UriRef iri, 
-            @HeaderParam("user-agent") String userAgent) throws Exception {
+            @QueryParam("subject") final List<UriRef> subjects) throws Exception {
         //this maks sure we are nt invoked with a trailing slash which would affect
         //relative resolution of links (e.g. css)
         TrailingSlash.enforcePresent(uriInfo);
@@ -129,9 +140,42 @@ public class ContentStore {
         //TODO the uri if the view has always params the one of the store is the one without params
         node.addProperty(RDF.type, ECS.ContentStoreView);
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
-       
+        for (UriRef subject : subjects) {
+            node.addProperty(DC.subject, subject);
+        }
         //What we return is the GraphNode we created with a template path
         return new RdfViewable("ResourceResolver", node, ContentStore.class);
+    }
+    
+    @POST
+    public String postContent(@Context final UriInfo uriInfo, final byte[] data, 
+            @HeaderParam("Content-Type") MediaType contentType) {
+        final String digest = DigestUtils.md5Hex(data);
+        String resourcePath = uriInfo.getAbsolutePath().toString();
+        if (!resourcePath.endsWith("/")) {
+            resourcePath += '/';
+        }
+        resourcePath += CONTENT_PREFIX;
+        final UriRef contentUri = new UriRef(resourcePath+digest);
+        discobitsHandler.put(contentUri, contentType, data);
+        return "Posted "+data.length+" bytes, with uri "+contentUri+": "+contentType;
+    }
+    
+    @GET
+    @Path("test/.*")
+    public String test() {
+        return "test";
+    }
+ 
+    @GET
+    @Path(CONTENT_PREFIX+"{hash: .*}")
+    public Response getContent(@Context final UriInfo uriInfo) {
+        final String resourcePath = uriInfo.getAbsolutePath().toString();
+        final UriRef contentUri = new UriRef(resourcePath);
+        final byte[] data = discobitsHandler.getData(contentUri);
+        final MediaType mediaType = discobitsHandler.getMediaType(contentUri);
+        Response.ResponseBuilder responseBuilder = Response.ok(data, mediaType);
+        return responseBuilder.build();
     }
     
 
