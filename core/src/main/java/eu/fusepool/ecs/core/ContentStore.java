@@ -15,8 +15,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import org.apache.clerezza.jaxrs.utils.TrailingSlash;
+import org.apache.clerezza.platform.Constants;
 import org.apache.clerezza.platform.content.DiscobitsHandler;
 import org.apache.clerezza.rdf.core.MGraph;
+import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
 import org.apache.clerezza.rdf.core.access.TcManager;
@@ -63,13 +65,7 @@ public class ContentStore {
      * Using slf4j for normal logging
      */
     private static final Logger log = LoggerFactory.getLogger(ContentStore.class);
-    
-    /**
-     * This service allows to get entities from configures sites
-     */
-    @Reference
-    private SiteManager siteManager;
-    
+     
     /**
      * This service allows accessing and creating persistent triple collections
      */
@@ -162,9 +158,9 @@ public class ContentStore {
     }
     
     @GET
-    @Path("test/.*")
-    public String test() {
-        return "test";
+    @Path("test")
+    public TripleCollection test() {
+        return tcManager.getMGraph(Constants.CONTENT_GRAPH_URI);
     }
  
     @GET
@@ -179,25 +175,6 @@ public class ContentStore {
     }
     
 
-    /**
-     * Add the description of a serviceUri to the specified MGraph using SiteManager.
-     * The description includes the metadata provided by the SiteManager.
-     * 
-     */
-    private void addResourceDescription(UriRef iri, MGraph mGraph) {
-        final Entity entity = siteManager.getEntity(iri.getUnicodeString());
-        if (entity != null) {
-            final RdfValueFactory valueFactory = new RdfValueFactory(mGraph);
-            final Representation representation = entity.getRepresentation();
-            if (representation != null) {
-                valueFactory.toRdfRepresentation(representation);
-            }
-            final Representation metadata = entity.getMetadata();
-            if (metadata != null) {
-                valueFactory.toRdfRepresentation(metadata);
-            }
-        }
-    }
 
     /**
      * This returns the existing MGraph for the log .
