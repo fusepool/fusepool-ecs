@@ -3,13 +3,17 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
 @prefix skos: <http://www.w3.org/2008/05/skos#>.
 @prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
 
 
 : a owl:Ontology.
 
 
 :ContentStore a rdfs:Class;
-	skos:definition '''A store for content items.'''@en.
+	skos:definition '''A store for content items. GET requests against a 
+resource of this type will derefernce to an appropriate instance of
+ContentStoreView. POST request will cause the body of the message to be
+added to the ContentStore.'''@en.
 
 :ContentStoreView a rdfs:Class;
 	skos:definition '''A view on a list of contents in a ContentStore. If the IRI denoting the 
@@ -22,12 +26,28 @@ associated content will not exceed the specified value. If
 the name of the resource contains a query parameter "offset" the specified 
 number of more relevant items will be omitted.'''@en.
 
+:Dereferencer a rdfs:Class;
+    skos:definition '''A resource of this type is used to dereference
+other resource of which the IRI is added as value of a "iri" query parameter to
+the name of the instance of this class.'''.
+
 :contents a rdf:Property;
 	skos:definition "Points to the list content item associated to the subject."@en;
-	rdfs:domain :ContentStoreView;
+    rdfs:domain :ContentStoreView;
     rdfs:range rdf:List.
+
+:search a rdf:Property;
+    skos:definition "A search restrictions of the subject";
+    rdfs:domain :ContentStoreView;
+    rdfs:range xsd:String.
 
 :store a rdf:Property;
 	skos:definition "Points to the list content item associated to the subject."@en;
 	rdfs:domain :ContentStoreView;
     rdfs:range :ContentStore.
+
+:dereferencer a rdf:Property;
+	skos:definition '''Points to a dereferencer capable of dereferencing the 
+Resources in the subject.'''@en;
+	rdfs:domain :ContentStoreView;
+    rdfs:range :Dereferencer.
