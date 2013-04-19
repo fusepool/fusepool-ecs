@@ -89,6 +89,11 @@
             <artifactId>org.apache.stanbol.enhancer.core</artifactId>
             <version>0.10.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.clerezza</groupId>
+            <artifactId>platform.cris</artifactId>
+            <version>0.2-SNAPSHOT</version>
+        </dependency>    
     </dependencies>
     
 </project>

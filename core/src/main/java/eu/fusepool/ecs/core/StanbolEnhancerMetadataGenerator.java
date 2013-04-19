@@ -16,9 +16,12 @@
 package eu.fusepool.ecs.core;
 
 import java.io.IOException;
+import java.security.Permission;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,10 +30,19 @@ import org.apache.clerezza.rdf.core.MGraph;
 import org.apache.clerezza.rdf.core.Resource;
 import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
+import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
+import org.apache.clerezza.rdf.core.access.TcManager;
+import org.apache.clerezza.rdf.core.access.security.TcAccessController;
+import org.apache.clerezza.rdf.core.access.security.TcPermission;
+import org.apache.clerezza.rdf.cris.PathVirtualProperty;
+import org.apache.clerezza.rdf.cris.PropertyHolder;
+import org.apache.clerezza.rdf.cris.VirtualProperty;
 import org.apache.clerezza.rdf.metadata.MetaDataGenerator;
 import org.apache.clerezza.rdf.ontologies.DC;
 import org.apache.clerezza.rdf.ontologies.DCTERMS;
+import org.apache.clerezza.rdf.ontologies.DISCOBITS;
 import org.apache.clerezza.rdf.ontologies.RDF;
+import org.apache.clerezza.rdf.ontologies.RDFS;
 import org.apache.clerezza.rdf.ontologies.SIOC;
 import org.apache.clerezza.rdf.utils.GraphNode;
 import org.apache.felix.scr.annotations.Component;
@@ -52,11 +64,20 @@ import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
 import org.apache.stanbol.entityhub.servicesapi.model.Entity;
 import org.apache.stanbol.entityhub.servicesapi.model.Representation;
 import org.apache.stanbol.entityhub.servicesapi.site.SiteManager;
+import org.osgi.service.component.ComponentContext;
+import org.slf4j.LoggerFactory;
 
 @Component
 @Service(MetaDataGenerator.class)
 public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
 
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(StanbolEnhancerMetadataGenerator.class);
+    /**
+     * This service allows accessing and creating persistent triple collections
+     */
+    @Reference
+    private TcManager tcManager;
+    
     @Reference
     private EnhancementJobManager enhancementJobManager;
     
@@ -72,7 +93,31 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
     @Reference
     private SiteManager siteManager;
    
+    /**
+     * The graph in which the enancer generated enhanceents are stored
+     */
+    private UriRef ENHANCEMENTS_GRAPH = new UriRef("urn:x-localhost:/ecs-collected-enhancements.graph");
+    
+    protected void activate(ComponentContext context) {
+        log.info("Enhanced Content Store being activated");
+        try {            
+            tcManager.createMGraph(ENHANCEMENTS_GRAPH);
+            //now make sure everybody can read from the graph
+            //or more precisly, anybody who can read the content-graph
+            TcAccessController tca = new TcAccessController(tcManager);
+            tca.setRequiredReadPermissions(ENHANCEMENTS_GRAPH,
+                    Collections.singleton((Permission) new TcPermission(
+                    "urn:x-localinstance:/content.graph", "read")));
+        } catch (EntityAlreadyExistsException ex) {
+            log.debug("The graph for the request log already exists");
+        }
 
+    }
+    
+    private MGraph getEnhancementGraph() {
+        return tcManager.getMGraph(ENHANCEMENTS_GRAPH);
+    }
+    
     public void generate(GraphNode node, byte[] data, MediaType mediaType) {
         System.out.println("generating metadata");
         try {
@@ -92,6 +137,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             String content = ContentItemHelper.getText(textBlob);
             node.addPropertyValue(SIOC.content, content);
             addSubjects(node, contentItem.getMetadata());
+            getEnhancementGraph().addAll(contentItem.getMetadata());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         } catch (EnhancementException ex) {
