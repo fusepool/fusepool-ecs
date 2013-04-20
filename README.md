@@ -5,7 +5,7 @@ This is the module for storing and searching for binary content.
 
 Uploading a content works like this:
 
-$ curl.exe -X POST -u "admin:admin" -H "Content-Type: text/plain" -d
+$ curl -X POST -u "admin:admin" -H "Content-Type: text/plain" -d
 @council_of_europe.txt http://localhost:8080/ecs/
 
 The response will look like this
