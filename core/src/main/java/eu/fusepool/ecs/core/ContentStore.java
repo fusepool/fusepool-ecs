@@ -1,10 +1,9 @@
 package eu.fusepool.ecs.core;
 
 import eu.fusepool.ecs.ontologies.ECS;
-import java.security.Permission;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -25,10 +24,7 @@ import org.apache.clerezza.rdf.core.MGraph;
 import org.apache.clerezza.rdf.core.NonLiteral;
 import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
-import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
 import org.apache.clerezza.rdf.core.access.TcManager;
-import org.apache.clerezza.rdf.core.access.security.TcAccessController;
-import org.apache.clerezza.rdf.core.access.security.TcPermission;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
 import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
@@ -42,7 +38,6 @@ import org.apache.clerezza.rdf.ontologies.RDFS;
 import org.apache.clerezza.rdf.ontologies.SIOC;
 import org.apache.clerezza.rdf.utils.GraphNode;
 import org.apache.clerezza.rdf.utils.RdfList;
-import org.apache.clerezza.rdf.utils.UnionMGraph;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -52,16 +47,9 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
-import org.apache.stanbol.enhancer.servicesapi.ChainManager;
-import org.apache.stanbol.enhancer.servicesapi.EnhancementJobManager;
-import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
-import org.apache.stanbol.entityhub.servicesapi.model.Entity;
-import org.apache.stanbol.entityhub.servicesapi.model.Representation;
-import org.apache.stanbol.entityhub.servicesapi.site.SiteManager;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wymiwyg.commons.util.MD5;
 
 /**
  * Uses the SiteManager to resolve entities. Every requested is recorded to a
@@ -119,22 +107,31 @@ public class ContentStore {
     @Produces("application/rdf+xml")
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
-            @QueryParam("search") final List<String> searchs) throws Exception {
+            @QueryParam("search") final List<String> searchs,
+            @QueryParam("items") Integer items,
+            @QueryParam("offset") @DefaultValue("0") Integer offset) throws Exception {
         //this maks sure we are nt invoked with a trailing slash which would affect
         //relative resolution of links (e.g. css)
         TrailingSlash.enforcePresent(uriInfo);
-        final String resourcePath = uriInfo.getAbsolutePath().toString();
-        //The URI at which this service was accessed accessed, this will be the 
-        //central serviceUri in the response
-        final UriRef serviceUri = new UriRef(resourcePath);
+        String viewUriString = uriInfo.getRequestUri().toString();//getAbsolutePath().toString();
+        if (items == null) {
+            if (viewUriString.indexOf('?') > 0) {
+                viewUriString += "&";
+            } else {
+                viewUriString += "?";
+            }
+            viewUriString += "items=10";
+            items = 10;
+        }
+        final UriRef contentStoreViewUri = new UriRef(viewUriString);
+        //This is the URI without query params
+        final UriRef contentStoreUri = new UriRef(uriInfo.getAbsolutePath().toString());
         //the in memory graph to which the triples for the response are added
         final MGraph resultGraph = new IndexedMGraph();
         //This GraphNode represents the service within our result graph
-        final GraphNode node = new GraphNode(serviceUri, resultGraph);
-        //The triples will be added to the first graph of the union
-        //i.e. to the in-memory responseGraph
-        //TODO the uri if the view has always params the one of the store is the one without params
+        final GraphNode node = new GraphNode(contentStoreViewUri, resultGraph);
         node.addProperty(RDF.type, ECS.ContentStoreView);
+        node.addProperty(ECS.store, contentStoreUri);
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
         final List<Condition> conditions = new ArrayList<Condition>();
         for (UriRef subject : subjects) {
@@ -153,9 +150,10 @@ public class ContentStore {
         if (matchingNodes.size() > 0) {
             node.addProperty(ECS.contents, matchingContentsList);
             final RdfList matchingContents = new RdfList(matchingContentsList, resultGraph);
-            matchingContents.addAll(matchingNodes);
+            matchingContents.addAll(matchingNodes.subList(
+                    Math.min(offset, matchingNodes.size()), 
+                    Math.min(offset+items, matchingNodes.size())));
         }
-        //matchingContents.add(new UriRef("http://example/"));
         //What we return is the GraphNode we created with a template path
         return new RdfViewable("ResourceResolver", node, ContentStore.class);
     }
