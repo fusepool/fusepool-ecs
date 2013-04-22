@@ -5,8 +5,13 @@ This is the module for storing and searching for binary content.
 
 Uploading a content works like this:
 
-$ curl.exe -X POST -u "admin:admin" -H "Content-Type: text/plain" -d
+$ curl -X POST -u "admin:admin" -H "Content-Type: text/plain" -d
 @council_of_europe.txt http://localhost:8080/ecs/
+
+of for a pdf
+
+$ curl -X POST -u "admin:admin" -H "Content-Type: application/pdf" --data-binary
+@concil_of_urope.pdf http://localhost:8080/ecs/
 
 The response will look like this
 
