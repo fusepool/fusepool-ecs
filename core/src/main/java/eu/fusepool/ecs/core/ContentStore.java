@@ -103,8 +103,6 @@ public class ContentStore {
      * associated presentational information.
      */
     @GET
-    //temporarily restricting till there is a templates
-    @Produces("application/rdf+xml")
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
             @QueryParam("search") final List<String> searchs,
@@ -155,7 +153,7 @@ public class ContentStore {
                     Math.min(offset+items, matchingNodes.size())));
         }
         //What we return is the GraphNode we created with a template path
-        return new RdfViewable("ResourceResolver", node, ContentStore.class);
+        return new RdfViewable("ContentSoreView", node, ContentStore.class);
     }
 
     @POST
@@ -197,11 +195,10 @@ public class ContentStore {
     }
 
     @GET
-    @Produces({"application/rdf+xml"})
     @Path(CONTENT_PREFIX + "{hash: .*}.meta")
     public RdfViewable getMeta(@Context final UriInfo uriInfo) {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
         final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
-        return new RdfViewable("ResourceResolver", graphNodeProvider.getLocal(contentUri), ContentStore.class);
+        return new RdfViewable("Meta", graphNodeProvider.getLocal(contentUri), ContentStore.class);
     }
 }
