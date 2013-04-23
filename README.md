@@ -19,8 +19,12 @@ Posted 499 bytes, with uri
 <http://localhost:8080/ecs/content/ebaa4a3277f3299cb3fd9e69367f2c4a>:
 text/plain
 
-At the specified URI the content can be dereferenced. Adding ".meta"
-to the URI will dereference to the rdf describing the resource in the
+At the specified URI the content can be dereferenced. On dereferencng the resource
+a Link-header like
+
+    Lin: <http://localhost:8080/ecs/content/ebaa4a3277f3299cb3fd9e69367f2c4a.meta>; rel=meta
+
+will point to the rdf describing the resource in the
 content graph. (Note that this is not the full RDF produced by the
 enhancer. This RDF is stored in a graph named:
 urn:x-localhost:/ecs-collected-enhancements.graph)
