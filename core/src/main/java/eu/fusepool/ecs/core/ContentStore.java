@@ -194,11 +194,11 @@ public class ContentStore {
         return "Posted " + data.length + " bytes, with uri " + contentUri + ": " + contentType;
     }
 
-    @GET
+ /*   @GET
     @Path("test")
     public TripleCollection test() {
         return tcManager.getMGraph(Constants.CONTENT_GRAPH_URI);
-    }
+    } */ 
 
     @GET
     @Path("reindex")
@@ -214,7 +214,9 @@ public class ContentStore {
         final UriRef contentUri = new UriRef(resourcePath);
         final byte[] data = discobitsHandler.getData(contentUri);
         final MediaType mediaType = discobitsHandler.getMediaType(contentUri);
-        Response.ResponseBuilder responseBuilder = Response.ok(data, mediaType);
+        Response.ResponseBuilder responseBuilder = 
+                Response.ok(data, mediaType)
+                .header("Link", "<"+resourcePath+".meta>; rel=meta");
         return responseBuilder.build();
     }
 
