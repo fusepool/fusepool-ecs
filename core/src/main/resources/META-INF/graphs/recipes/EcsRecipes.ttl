@@ -1,0 +1,14 @@
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix recipe: <http://vocab.netlabs.org/recipe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+[] a recipe:Recipe;
+  rdfs:label "A recipe to present a ContentStoreView";
+  recipe:ingredient
+    [a recipe:Ingredient;
+        recipe:ingredientProperty <http://purl.org/dc/elements/1.1/subject>];
+  recipe:ingredient
+    [a recipe:Ingredient;
+        recipe:ingredientProperty rdf:first];
+  recipe:recipeDomain "eu/fusepool/ecs/core/ContentStoreView" .

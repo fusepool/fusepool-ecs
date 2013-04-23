@@ -8,4 +8,15 @@
       <goal>org.apache.sling:maven-sling-plugin:install</goal>
     </goals>
   </action>
+  <action>
+            <actionName>CUSTOM-fusepool-info</actionName>
+            <displayName>fusepool-info</displayName>
+            <goals>
+                <goal>install</goal>
+                <goal>org.apache.sling:maven-sling-plugin:install</goal>
+            </goals>
+            <properties>
+                <sling.url>http://platform.fusepool.info/system/console</sling.url>
+            </properties>
+        </action>
 </actions>

@@ -51,3 +51,6 @@ the name of the instance of this class.'''.
 Resources in the subject.'''@en;
 	rdfs:domain :ContentStoreView;
     rdfs:range :Dereferencer.
+
+:textPreview a rdf:Property;
+    skos:definition '''A textual preview of the subject.'''@en.

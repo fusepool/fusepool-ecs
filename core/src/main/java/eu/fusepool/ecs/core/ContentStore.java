@@ -2,6 +2,7 @@ package eu.fusepool.ecs.core;
 
 import eu.fusepool.ecs.ontologies.ECS;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -20,12 +21,18 @@ import org.apache.clerezza.platform.content.DiscobitsHandler;
 import org.apache.clerezza.platform.cris.IndexService;
 import org.apache.clerezza.platform.graphnodeprovider.GraphNodeProvider;
 import org.apache.clerezza.rdf.core.BNode;
+import org.apache.clerezza.rdf.core.Language;
+import org.apache.clerezza.rdf.core.Literal;
+import org.apache.clerezza.rdf.core.LiteralFactory;
 import org.apache.clerezza.rdf.core.MGraph;
 import org.apache.clerezza.rdf.core.NonLiteral;
+import org.apache.clerezza.rdf.core.PlainLiteral;
+import org.apache.clerezza.rdf.core.Resource;
 import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
+import org.apache.clerezza.rdf.core.impl.TripleImpl;
 import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
 import org.apache.clerezza.rdf.cris.PropertyHolder;
@@ -77,6 +84,7 @@ public class ContentStore {
     private IndexService indexService;
     @Reference
     private GraphNodeProvider graphNodeProvider;
+    private LiteralFactory literalFactory = LiteralFactory.getInstance();
     private final static String CONTENT_PREFIX = "content/";
 
     @Activate
@@ -151,9 +159,25 @@ public class ContentStore {
             matchingContents.addAll(matchingNodes.subList(
                     Math.min(offset, matchingNodes.size()), 
                     Math.min(offset+items, matchingNodes.size())));
+            for (Resource content : matchingContents) {
+                GraphNode cgContent = graphNodeProvider.getLocal((UriRef)content);
+                Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
+                while (valueIter.hasNext()) {
+                    final Literal valueLit = valueIter.next();
+                    final String textualContent = valueLit.getLexicalForm();
+                    final String preview = textualContent.substring(
+                            0, Math.min(100, textualContent.length()));
+                    Language language = null;
+                    if (valueLit instanceof PlainLiteral) {
+                        language =((PlainLiteral)valueLit).getLanguage();
+                    }
+                    resultGraph.add(new TripleImpl((NonLiteral) content, ECS.textPreview, 
+                            new PlainLiteralImpl(preview, language)));
+                }
+            }
         }
         //What we return is the GraphNode we created with a template path
-        return new RdfViewable("ContentSoreView", node, ContentStore.class);
+        return new RdfViewable("ContentStoreView", node, ContentStore.class);
     }
 
     @POST
