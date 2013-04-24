@@ -1,9 +1,16 @@
 package eu.fusepool.ecs.core;
 
 import eu.fusepool.ecs.ontologies.ECS;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -34,6 +41,8 @@ import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
 import org.apache.clerezza.rdf.core.impl.TripleImpl;
 import org.apache.clerezza.rdf.cris.Condition;
+import org.apache.clerezza.rdf.cris.CountFacetCollector;
+import org.apache.clerezza.rdf.cris.FacetCollector;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
 import org.apache.clerezza.rdf.cris.PropertyHolder;
 import org.apache.clerezza.rdf.cris.VirtualProperty;
@@ -111,6 +120,23 @@ public class ContentStore {
      * associated presentational information.
      */
     @GET
+    public RdfViewable serviceEntryPriviledged(@Context final UriInfo uriInfo,
+            @QueryParam("subject") final List<UriRef> subjects,
+            @QueryParam("search") final List<String> searchs,
+            @QueryParam("items") final Integer items,
+            @QueryParam("offset") final @DefaultValue("0") Integer offset) throws Exception {
+        try {
+            return AccessController.doPrivileged(new PrivilegedExceptionAction<RdfViewable>() {
+                public RdfViewable run() throws Exception {
+                    return serviceEntry(uriInfo, subjects, searchs, items, offset);
+                }
+            });
+        } catch (PrivilegedActionException e) {
+            throw e.getException();
+        }
+
+    }
+
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
             @QueryParam("search") final List<String> searchs,
@@ -151,16 +177,28 @@ public class ContentStore {
         if (conditions.isEmpty()) {
             conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*"));
         }
-        final List<NonLiteral> matchingNodes = indexService.findResources(conditions);
+        final FacetCollector facetCollector = new CountFacetCollector(
+                Collections.singleton((VirtualProperty) new PropertyHolder(DC.subject)));
+        final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
+        final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
+        for (Map.Entry<String, Integer> entry : facets) {
+            final BNode facetResource = new BNode();
+            final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
+            node.addProperty(ECS.facet, facetResource);
+            final UriRef facetValue = new UriRef(entry.getKey());
+            final Integer facetCount = entry.getValue();
+            facetNode.addProperty(ECS.facetValue, facetValue);
+            facetNode.addPropertyValue(ECS.facetCount, facetCount);
+        }
         final NonLiteral matchingContentsList = new BNode();
         if (matchingNodes.size() > 0) {
             node.addProperty(ECS.contents, matchingContentsList);
             final RdfList matchingContents = new RdfList(matchingContentsList, resultGraph);
             matchingContents.addAll(matchingNodes.subList(
-                    Math.min(offset, matchingNodes.size()), 
-                    Math.min(offset+items, matchingNodes.size())));
+                    Math.min(offset, matchingNodes.size()),
+                    Math.min(offset + items, matchingNodes.size())));
             for (Resource content : matchingContents) {
-                GraphNode cgContent = graphNodeProvider.getLocal((UriRef)content);
+                GraphNode cgContent = graphNodeProvider.getLocal((UriRef) content);
                 Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
                 while (valueIter.hasNext()) {
                     final Literal valueLit = valueIter.next();
@@ -169,9 +207,9 @@ public class ContentStore {
                             0, Math.min(100, textualContent.length()));
                     Language language = null;
                     if (valueLit instanceof PlainLiteral) {
-                        language =((PlainLiteral)valueLit).getLanguage();
+                        language = ((PlainLiteral) valueLit).getLanguage();
                     }
-                    resultGraph.add(new TripleImpl((NonLiteral) content, ECS.textPreview, 
+                    resultGraph.add(new TripleImpl((NonLiteral) content, ECS.textPreview,
                             new PlainLiteralImpl(preview, language)));
                 }
             }
@@ -194,19 +232,18 @@ public class ContentStore {
         return "Posted " + data.length + " bytes, with uri " + contentUri + ": " + contentType;
     }
 
- /*   @GET
-    @Path("test")
-    public TripleCollection test() {
-        return tcManager.getMGraph(Constants.CONTENT_GRAPH_URI);
-    } */ 
-
+    /*   @GET
+     @Path("test")
+     public TripleCollection test() {
+     return tcManager.getMGraph(Constants.CONTENT_GRAPH_URI);
+     } */
     @GET
     @Path("reindex")
     public String reIndex() {
         indexService.reCreateIndex();
         return "re-indexed";
     }
-    
+
     @GET
     @Path(CONTENT_PREFIX + "{hash: .*}")
     public Response getContent(@Context final UriInfo uriInfo) {
@@ -214,9 +251,9 @@ public class ContentStore {
         final UriRef contentUri = new UriRef(resourcePath);
         final byte[] data = discobitsHandler.getData(contentUri);
         final MediaType mediaType = discobitsHandler.getMediaType(contentUri);
-        Response.ResponseBuilder responseBuilder = 
+        Response.ResponseBuilder responseBuilder =
                 Response.ok(data, mediaType)
-                .header("Link", "<"+resourcePath+".meta>; rel=meta");
+                .header("Link", "<" + resourcePath + ".meta>; rel=meta");
         return responseBuilder.build();
     }
 

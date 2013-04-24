@@ -54,3 +54,16 @@ Resources in the subject.'''@en;
 
 :textPreview a rdf:Property;
     skos:definition '''A textual preview of the subject.'''@en.
+
+:facet a rdf:Property;
+    skos:definition '''A facet of the subject.'''@en;
+	rdfs:domain :ContentStoreView;
+    rdfs:range :Facet.
+
+:facetValue a rdf:Property;
+    skos:definition '''The value of the facet'''@en;
+	rdfs:domain :Facet.
+
+:facetCount a rdf:Property;
+    skos:definition '''The count of the facet'''@en;
+	rdfs:domain :Facet.
