@@ -156,7 +156,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
         }
     }
     
-        /**
+    /**
      * Add the description of a serviceUri to the specified MGraph using SiteManager.
      * The description includes the metadata provided by the SiteManager.
      * 

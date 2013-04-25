@@ -6,9 +6,11 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -59,6 +61,10 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
+import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
+import org.apache.stanbol.entityhub.servicesapi.model.Entity;
+import org.apache.stanbol.entityhub.servicesapi.model.Representation;
+import org.apache.stanbol.entityhub.servicesapi.site.SiteManager;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,8 +95,14 @@ public class ContentStore {
     private IndexService indexService;
     @Reference
     private GraphNodeProvider graphNodeProvider;
+    /**
+     * This service allows to get entities from configures sites
+     */
+    @Reference
+    private SiteManager siteManager;
     private LiteralFactory literalFactory = LiteralFactory.getInstance();
     private final static String CONTENT_PREFIX = "content/";
+    private int MAX_FACETS = 10;
 
     @Activate
     protected void activate(ComponentContext context) {
@@ -163,6 +175,7 @@ public class ContentStore {
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
         final List<Condition> conditions = new ArrayList<Condition>();
         for (UriRef subject : subjects) {
+            addResourceDescription(subject, resultGraph);
             node.addProperty(DC.subject, subject);
             conditions.add(new WildcardCondition(new PropertyHolder(DC.subject), subject.getUnicodeString()));
         }
@@ -177,13 +190,21 @@ public class ContentStore {
                 Collections.singleton((VirtualProperty) new PropertyHolder(DC.subject)));
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
-        for (Map.Entry<String, Integer> entry : facets) {
+        List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
+        Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
+
+            public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());            }
+        });
+        for (int i = 0; i < Math.min(MAX_FACETS, faceList.size()); i++) {
+            Entry<String, Integer> entry = faceList.get(i);
             final BNode facetResource = new BNode();
             final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
             node.addProperty(ECS.facet, facetResource);
             final UriRef facetValue = new UriRef(entry.getKey());
             final Integer facetCount = entry.getValue();
             facetNode.addProperty(ECS.facetValue, facetValue);
+            addResourceDescription(facetValue, resultGraph);
             facetNode.addPropertyValue(ECS.facetCount, facetCount);
         }
         final NonLiteral matchingContentsList = new BNode();
@@ -259,5 +280,21 @@ public class ContentStore {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
         final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
         return new RdfViewable("Meta", graphNodeProvider.getLocal(contentUri), ContentStore.class);
+    }
+    
+        /**
+     * Add the description of a serviceUri to the specified MGraph using SiteManager.
+     * The description includes the metadata provided by the SiteManager.
+     * 
+     */
+    private void addResourceDescription(UriRef iri, MGraph mGraph) {
+        final Entity entity = siteManager.getEntity(iri.getUnicodeString());
+        if (entity != null) {
+            final RdfValueFactory valueFactory = new RdfValueFactory(mGraph);
+            final Representation representation = entity.getRepresentation();
+            if (representation != null) {
+                valueFactory.toRdfRepresentation(representation);
+            }
+        }
     }
 }
