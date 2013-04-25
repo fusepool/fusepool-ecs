@@ -41,6 +41,11 @@ the name of the instance of this class.'''.
     rdfs:domain :ContentStoreView;
     rdfs:range xsd:String.
 
+:subject a rdf:Property;
+    skos:definition "A subject restrictions of the subject";
+    rdfs:domain :ContentStoreView;
+    rdfs:range xsd:String.
+
 :store a rdf:Property;
 	skos:definition "Points to the list content item associated to the subject."@en;
 	rdfs:domain :ContentStoreView;
