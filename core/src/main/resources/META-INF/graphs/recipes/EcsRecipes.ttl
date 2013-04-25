@@ -8,7 +8,7 @@
   rdfs:label "A recipe to present a ContentStoreView";
   recipe:ingredient
     [a recipe:Ingredient;
-        recipe:ingredientProperty <http://purl.org/dc/elements/1.1/subject>],
+        recipe:ingredientProperty ecs:subject],
     [a recipe:Ingredient;
         recipe:ingredientProperty rdf:first],
     [a recipe:Ingredient;

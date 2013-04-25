@@ -176,7 +176,7 @@ public class ContentStore {
         final List<Condition> conditions = new ArrayList<Condition>();
         for (UriRef subject : subjects) {
             addResourceDescription(subject, resultGraph);
-            node.addProperty(DC.subject, subject);
+            node.addProperty(ECS.subject, subject);
             conditions.add(new WildcardCondition(new PropertyHolder(DC.subject), subject.getUnicodeString()));
         }
         for (String search : searchs) {
