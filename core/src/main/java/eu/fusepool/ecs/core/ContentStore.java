@@ -85,6 +85,7 @@ public class ContentStore {
      * Using slf4j for normal logging
      */
     private static final Logger log = LoggerFactory.getLogger(ContentStore.class);
+    public static final int PREVIEW_LENGTH = 200;
     /**
      * This service allows accessing and creating persistent triple collections
      */
@@ -182,7 +183,7 @@ public class ContentStore {
         }
         for (String search : searchs) {
             node.addPropertyValue(ECS.search, search);
-            conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*" + search + "*"));
+            conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*" + search.toLowerCase() + "*"));
         }
         if (conditions.isEmpty()) {
             conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*"));
@@ -222,7 +223,9 @@ public class ContentStore {
                     final Literal valueLit = valueIter.next();
                     final String textualContent = valueLit.getLexicalForm();
                     final String preview = textualContent.substring(
-                            0, Math.min(100, textualContent.length()));
+                            0, Math.min(PREVIEW_LENGTH, textualContent.length()))
+                            .replace('\n', ' ')
+                            .replace("\r", "");
                     Language language = null;
                     if (valueLit instanceof PlainLiteral) {
                         language = ((PlainLiteral) valueLit).getLanguage();
