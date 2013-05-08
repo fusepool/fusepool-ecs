@@ -37,6 +37,7 @@ import org.apache.clerezza.rdf.core.Resource;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
+import org.apache.clerezza.rdf.core.impl.SimpleMGraph;
 import org.apache.clerezza.rdf.core.impl.TripleImpl;
 import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
@@ -247,6 +248,17 @@ public class ContentStore {
         final UriRef contentUri = new UriRef(resourcePath + digest);
         discobitsHandler.put(contentUri, contentType, data);
         return "Posted " + data.length + " bytes, with uri " + contentUri + ": " + contentType;
+    }
+    
+    
+    //getting around entityhub
+    @GET
+    public RdfViewable getEntity(@QueryParam("uri") UriRef entityUri) {
+        final MGraph resultMGraph = new SimpleMGraph();
+        addResourceDescription(entityUri, resultMGraph);
+        final GraphNode resultNode = new GraphNode(entityUri, resultMGraph);
+        return new RdfViewable("ContentStoreView", resultNode, ContentStore.class);
+        
     }
 
     /*   @GET
