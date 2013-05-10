@@ -60,6 +60,7 @@ import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
+import org.apache.stanbol.commons.security.UserUtil;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
 import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
 import org.apache.stanbol.entityhub.servicesapi.model.Entity;
@@ -134,6 +135,8 @@ public class ContentStore {
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") final Integer items,
             @QueryParam("offset") final @DefaultValue("0") Integer offset) throws Exception {
+        //here we can still access the user name
+        final String userName = UserUtil.getCurrentUserName();
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<RdfViewable>() {
                 public RdfViewable run() throws Exception {
