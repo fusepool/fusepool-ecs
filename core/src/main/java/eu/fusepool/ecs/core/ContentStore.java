@@ -254,12 +254,15 @@ public class ContentStore {
     }
     
     
-    //getting around entityhub
+    //an alternative to retrieveing via entityhub
     @GET
+    @Path("entity")
     public RdfViewable getEntity(@QueryParam("uri") UriRef entityUri) {
         final MGraph resultMGraph = new SimpleMGraph();
         addResourceDescription(entityUri, resultMGraph);
         final GraphNode resultNode = new GraphNode(entityUri, resultMGraph);
+        resultNode.addPropertyValue(RDFS.comment, "here you go");
+        //TODO use own rendering spec
         return new RdfViewable("ContentStoreView", resultNode, ContentStore.class);
         
     }
