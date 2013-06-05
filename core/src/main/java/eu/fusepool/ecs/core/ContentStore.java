@@ -105,7 +105,7 @@ public class ContentStore {
     private SiteManager siteManager;
     private LiteralFactory literalFactory = LiteralFactory.getInstance();
     private final static String CONTENT_PREFIX = "content/";
-    private int MAX_FACETS = 10;
+    //private int MAX_FACETS = 10;
 
     @Activate
     protected void activate(ComponentContext context) {
@@ -135,13 +135,14 @@ public class ContentStore {
             @QueryParam("subject") final List<UriRef> subjects,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") final Integer items,
-            @QueryParam("offset") final @DefaultValue("0") Integer offset) throws Exception {
+            @QueryParam("offset") final @DefaultValue("0") Integer offset,
+            @QueryParam("maxFacets") final @DefaultValue("10") Integer maxFacets) throws Exception {
         //here we can still access the user name
         final String userName = UserUtil.getCurrentUserName();
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<RdfViewable>() {
                 public RdfViewable run() throws Exception {
-                    return serviceEntry(uriInfo, subjects, searchs, items, offset);
+                    return serviceEntry(uriInfo, subjects, searchs, items, offset, maxFacets);
                 }
             });
         } catch (PrivilegedActionException e) {
@@ -154,7 +155,8 @@ public class ContentStore {
             @QueryParam("subject") final List<UriRef> subjects,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") Integer items,
-            @QueryParam("offset") @DefaultValue("0") Integer offset) throws Exception {
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("maxFacets") @DefaultValue("10") Integer maxFacets) throws Exception {
         //this maks sure we are nt invoked with a trailing slash which would affect
         //relative resolution of links (e.g. css)
         TrailingSlash.enforcePresent(uriInfo);
@@ -201,7 +203,7 @@ public class ContentStore {
             public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
                 return o2.getValue().compareTo(o1.getValue());            }
         });
-        for (int i = 0; i < Math.min(MAX_FACETS, faceList.size()); i++) {
+        for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
             Entry<String, Integer> entry = faceList.get(i);
             final BNode facetResource = new BNode();
             final GraphNode facetNode = new GraphNode(facetResource, resultGraph);

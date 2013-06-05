@@ -24,7 +24,9 @@ items will be contents having each of the specified resource as subjects. If
 the name of the resource contains a query parameter "items" the number of 
 associated content will not exceed the specified value. If
 the name of the resource contains a query parameter "offset" the specified 
-number of more relevant items will be omitted.'''@en.
+number of more relevant items will be omitted. If
+the name of the resource contains a query parameter "maxFacets" up to this
+this amount of facets that can be used to narrow the search will be included.'''@en.
 
 :Dereferencer a rdfs:Class;
     skos:definition '''A resource of this type is used to dereference

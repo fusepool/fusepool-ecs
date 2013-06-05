@@ -9,7 +9,7 @@ import org.apache.stanbol.commons.web.base.NavigationLink;
 public class ECSMenuItem extends NavigationLink {
     
     public ECSMenuItem() {
-        super("ecs/", "ECS/", "The Enhanced Content Store", 300);
+        super("ecs/", "/ECS", "The Enhanced Content Store", 300);
     }
     
 }
