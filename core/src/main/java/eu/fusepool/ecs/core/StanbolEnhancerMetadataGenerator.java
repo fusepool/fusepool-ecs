@@ -86,7 +86,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
     /**
      * The graph in which the enancer generated enhanceents are stored
      */
-    private UriRef ENHANCEMENTS_GRAPH = new UriRef("urn:x-localhost:/ecs-collected-enhancements.graph");
+    final static UriRef ENHANCEMENTS_GRAPH = new UriRef("urn:x-localhost:/ecs-collected-enhancements.graph");
     
     protected void activate(ComponentContext context) {
         log.info("Enhanced Content Store being activated");

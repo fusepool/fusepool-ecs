@@ -53,6 +53,7 @@ import org.apache.clerezza.rdf.ontologies.RDFS;
 import org.apache.clerezza.rdf.ontologies.SIOC;
 import org.apache.clerezza.rdf.utils.GraphNode;
 import org.apache.clerezza.rdf.utils.RdfList;
+import org.apache.clerezza.rdf.utils.UnionMGraph;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -302,7 +303,10 @@ public class ContentStore {
     public RdfViewable getMeta(@Context final UriInfo uriInfo) {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
         final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
-        return new RdfViewable("Meta", graphNodeProvider.getLocal(contentUri), ContentStore.class);
+        final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
+        final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
+        return new RdfViewable("Meta", new GraphNode(contentUri, 
+                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)) , ContentStore.class);
     }
     
         /**
