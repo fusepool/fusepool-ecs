@@ -28,6 +28,9 @@ number of more relevant items will be omitted. If
 the name of the resource contains a query parameter "maxFacets" up to this
 this amount of facets that can be used to narrow the search will be included.'''@en.
 
+:ContentItem a rdfs:Class;
+        skos:definition '''A content item managed by a store.'''@en.
+
 :Dereferencer a rdfs:Class;
     skos:definition '''A resource of this type is used to dereference
 other resource of which the IRI is added as value of a "iri" query parameter to

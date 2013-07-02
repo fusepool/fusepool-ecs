@@ -119,7 +119,7 @@ public class ContentStore {
         final VirtualProperty subjectLabel = new PathVirtualProperty(subjectLabelPath);
         indexProperties.add(subjectLabel);
         indexProperties.add(new PropertyHolder(DC.subject));
-        indexService.addDefinitionVirtual(DISCOBITS.InfoDiscoBit, indexProperties);
+        indexService.addDefinitionVirtual(ECS.ContentItem, indexProperties);
     }
 
     @Deactivate

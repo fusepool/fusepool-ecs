@@ -15,6 +15,7 @@
  */
 package eu.fusepool.ecs.core;
 
+import eu.fusepool.ecs.ontologies.ECS;
 import java.io.IOException;
 import java.security.Permission;
 import java.util.Collections;
@@ -111,6 +112,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
     public void generate(GraphNode node, byte[] data, MediaType mediaType) {
         System.out.println("generating metadata");
         try {
+            node.addProperty(RDF.type, ECS.ContentItem);
             final ContentSource contentSource = new ByteArraySource(
                     data, mediaType.toString());
             final ContentItem contentItem = contentItemFactory.createContentItem(
