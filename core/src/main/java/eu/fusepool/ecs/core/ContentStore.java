@@ -200,9 +200,9 @@ public class ContentStore {
         final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
         List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
         Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
-
             public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
-                return o2.getValue().compareTo(o1.getValue());            }
+                return o2.getValue().compareTo(o1.getValue());
+            }
         });
         for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
             Entry<String, Integer> entry = faceList.get(i);
@@ -224,21 +224,8 @@ public class ContentStore {
                     Math.min(offset + items, matchingNodes.size())));
             for (Resource content : matchingContents) {
                 GraphNode cgContent = graphNodeProvider.getLocal((UriRef) content);
-                Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
-                while (valueIter.hasNext()) {
-                    final Literal valueLit = valueIter.next();
-                    final String textualContent = valueLit.getLexicalForm();
-                    final String preview = textualContent.substring(
-                            0, Math.min(PREVIEW_LENGTH, textualContent.length()))
-                            .replace('\n', ' ')
-                            .replace("\r", "");
-                    Language language = null;
-                    if (valueLit instanceof PlainLiteral) {
-                        language = ((PlainLiteral) valueLit).getLanguage();
-                    }
-                    resultGraph.add(new TripleImpl((NonLiteral) content, ECS.textPreview,
-                            new PlainLiteralImpl(preview, language)));
-                }
+                addRelevantDescription(cgContent, resultGraph);
+
             }
         }
         //What we return is the GraphNode we created with a template path
@@ -258,8 +245,7 @@ public class ContentStore {
         discobitsHandler.put(contentUri, contentType, data);
         return "Posted " + data.length + " bytes, with uri " + contentUri + ": " + contentType;
     }
-    
-    
+
     //an alternative to retrieveing via entityhub
     @GET
     @Path("entity")
@@ -270,7 +256,7 @@ public class ContentStore {
         resultNode.addPropertyValue(RDFS.comment, "here you go");
         //TODO use own rendering spec
         return new RdfViewable("ContentStoreView", resultNode, ContentStore.class);
-        
+
     }
 
     /*   @GET
@@ -305,22 +291,21 @@ public class ContentStore {
         final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
         return getMeta(contentUri);
     }
-    
+
     @GET
     @Path("meta")
     public RdfViewable getMeta(@QueryParam("iri") final UriRef contentUri) {
         final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
         final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
-        return new RdfViewable("Meta", new GraphNode(contentUri, 
-                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)) , ContentStore.class);
+        return new RdfViewable("Meta", new GraphNode(contentUri,
+                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStore.class);
     }
-    
-    
-    
-        /**
-     * Add the description of a serviceUri to the specified MGraph using SiteManager.
-     * The description includes the metadata provided by the SiteManager.
-     * 
+
+    /**
+     * Add the description of a serviceUri to the specified MGraph using
+     * SiteManager. The description includes the metadata provided by the
+     * SiteManager.
+     *
      */
     private void addResourceDescription(UriRef iri, MGraph mGraph) {
         final Entity entity = siteManager.getEntity(iri.getUnicodeString());
@@ -330,6 +315,24 @@ public class ContentStore {
             if (representation != null) {
                 valueFactory.toRdfRepresentation(representation);
             }
+        }
+    }
+
+    private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph) {
+        Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
+        while (valueIter.hasNext()) {
+            final Literal valueLit = valueIter.next();
+            final String textualContent = valueLit.getLexicalForm();
+            final String preview = textualContent.substring(
+                    0, Math.min(PREVIEW_LENGTH, textualContent.length()))
+                    .replace('\n', ' ')
+                    .replace("\r", "");
+            Language language = null;
+            if (valueLit instanceof PlainLiteral) {
+                language = ((PlainLiteral) valueLit).getLanguage();
+            }
+            resultGraph.add(new TripleImpl((NonLiteral)cgContent.getNode(), ECS.textPreview,
+                    new PlainLiteralImpl(preview, language)));
         }
     }
 }
