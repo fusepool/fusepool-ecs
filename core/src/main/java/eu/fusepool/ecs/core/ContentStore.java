@@ -47,6 +47,7 @@ import org.apache.clerezza.rdf.cris.PropertyHolder;
 import org.apache.clerezza.rdf.cris.VirtualProperty;
 import org.apache.clerezza.rdf.cris.WildcardCondition;
 import org.apache.clerezza.rdf.ontologies.DC;
+import org.apache.clerezza.rdf.ontologies.DCTERMS;
 import org.apache.clerezza.rdf.ontologies.DISCOBITS;
 import org.apache.clerezza.rdf.ontologies.RDF;
 import org.apache.clerezza.rdf.ontologies.RDFS;
@@ -333,6 +334,18 @@ public class ContentStore {
             }
             resultGraph.add(new TripleImpl((NonLiteral)cgContent.getNode(), ECS.textPreview,
                     new PlainLiteralImpl(preview, language)));
+        }
+        copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_, 
+                RDFS.comment, DC.description);
+    }
+    private void copyProperties(GraphNode fromNode, MGraph toGraph, UriRef... properties) {
+        for (UriRef property : properties) {
+            Iterator<Resource> objects = fromNode.getObjects(property);
+            while (objects.hasNext()) {
+                Resource object = objects.next();
+                toGraph.add(new TripleImpl((NonLiteral)fromNode.getNode(), 
+                        property, object));
+            }
         }
     }
 }
