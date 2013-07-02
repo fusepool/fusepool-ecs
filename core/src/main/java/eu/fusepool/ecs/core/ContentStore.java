@@ -303,11 +303,19 @@ public class ContentStore {
     public RdfViewable getMeta(@Context final UriInfo uriInfo) {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
         final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
+        return getMeta(contentUri);
+    }
+    
+    @GET
+    @Path("meta")
+    public RdfViewable getMeta(@QueryParam("iri") final UriRef contentUri) {
         final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
         final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
         return new RdfViewable("Meta", new GraphNode(contentUri, 
                 new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)) , ContentStore.class);
     }
+    
+    
     
         /**
      * Add the description of a serviceUri to the specified MGraph using SiteManager.
