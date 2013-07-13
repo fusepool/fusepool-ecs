@@ -66,6 +66,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.clerezza</groupId>
+            <artifactId>platform.graphnodeprovider</artifactId>
+            <version>0.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.clerezza</groupId>
             <artifactId>rdf.utils</artifactId>
             <version>0.13-incubating</version>
         </dependency>

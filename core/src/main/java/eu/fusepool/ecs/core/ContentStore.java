@@ -27,6 +27,7 @@ import org.apache.clerezza.jaxrs.utils.TrailingSlash;
 import org.apache.clerezza.platform.content.DiscobitsHandler;
 import org.apache.clerezza.platform.cris.IndexService;
 import org.apache.clerezza.platform.graphnodeprovider.GraphNodeProvider;
+import org.apache.clerezza.platform.graphprovider.content.ContentGraphProvider;
 import org.apache.clerezza.rdf.core.BNode;
 import org.apache.clerezza.rdf.core.Language;
 import org.apache.clerezza.rdf.core.Literal;
@@ -35,6 +36,7 @@ import org.apache.clerezza.rdf.core.MGraph;
 import org.apache.clerezza.rdf.core.NonLiteral;
 import org.apache.clerezza.rdf.core.PlainLiteral;
 import org.apache.clerezza.rdf.core.Resource;
+import org.apache.clerezza.rdf.core.Triple;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
@@ -101,6 +103,8 @@ public class ContentStore {
     private IndexService indexService;
     @Reference
     private GraphNodeProvider graphNodeProvider;
+    @Reference
+    private ContentGraphProvider contentGraphProvider;
     /**
      * This service allows to get entities from configures sites
      */
@@ -317,6 +321,21 @@ public class ContentStore {
             final Representation representation = entity.getRepresentation();
             if (representation != null) {
                 valueFactory.toRdfRepresentation(representation);
+            }
+        }
+        //Also add selected properties from content graph
+        //Note that we have to be selective or we would add all the documents the
+        //entity is a subject of.
+        MGraph cg = contentGraphProvider.getContentGraph();
+        Iterator<Triple> allOutgoing = cg.filter(iri, null, null);
+        while(allOutgoing.hasNext()) {
+            Triple t = allOutgoing.next();
+            if (t.getPredicate().equals(RDF.type)) {
+                mGraph.add(t);
+                continue;
+            }
+            if (t.getObject() instanceof Literal) {
+                mGraph.add(t);
             }
         }
     }
