@@ -2,6 +2,7 @@ package eu.fusepool.ecs.core;
 
 import eu.fusepool.ecs.ontologies.ECS;
 import java.security.AccessController;
+import java.security.AllPermission;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
@@ -268,6 +269,7 @@ public class ContentStore {
     @GET
     @Path("reindex")
     public String reIndex() {
+        AccessController.checkPermission(new AllPermission());
         indexService.reCreateIndex();
         return "re-indexed";
     }
