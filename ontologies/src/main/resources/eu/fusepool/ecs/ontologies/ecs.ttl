@@ -41,6 +41,10 @@ the name of the instance of this class.'''.
     rdfs:domain :ContentStoreView;
     rdfs:range rdf:List.
 
+:contentsCount a rdf:Property;
+	skos:definition "Points to the number of contents item associated to the subject."@en;
+    rdfs:domain :ContentStoreView.
+
 :search a rdf:Property;
     skos:definition "A search restrictions of the subject";
     rdfs:domain :ContentStoreView;

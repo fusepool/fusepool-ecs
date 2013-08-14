@@ -203,6 +203,7 @@ public class ContentStore {
         final FacetCollector facetCollector = new CountFacetCollector(
                 Collections.singleton((VirtualProperty) new PropertyHolder(DC.subject)));
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
+        node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
         final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
         List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
         Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
