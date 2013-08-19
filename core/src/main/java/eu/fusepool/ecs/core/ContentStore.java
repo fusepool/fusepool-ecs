@@ -32,8 +32,13 @@ public interface ContentStore {
      * @param items the number of items to return
      * @param offset the position at which to start items (for pagination)
      * @param maxFacets the maximum number of facets the result shall contain
+     * @param withContent true if the SIOC:content properties shall be included in the result
      * @return a GraphNode describing the ContentStoreView
      */
-    GraphNode getContentStoreView(final UriRef contentStoreUri, final UriRef contentStoreViewUri, final List<UriRef> subjects, final List<String> searchs, Integer items, Integer offset, Integer maxFacets);
+    GraphNode getContentStoreView(final UriRef contentStoreUri, 
+            final UriRef contentStoreViewUri, final List<UriRef> subjects, 
+            final List<String> searchs, 
+            Integer items, Integer offset, Integer maxFacets,
+            boolean withContent);
     
 }

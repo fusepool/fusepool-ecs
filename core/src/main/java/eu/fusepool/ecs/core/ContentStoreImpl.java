@@ -180,18 +180,19 @@ public class ContentStoreImpl implements ContentStore {
         final UriRef contentStoreViewUri = new UriRef(viewUriString);
         //This is the URI without query params
         final UriRef contentStoreUri = new UriRef(uriInfo.getAbsolutePath().toString());
-        GraphNode node = getContentStoreView(contentStoreUri, contentStoreViewUri, 
-                subjects, searchs, items, 
-                offset, maxFacets);
+        GraphNode node = getContentStoreView(contentStoreUri, contentStoreViewUri,
+                subjects, searchs, items,
+                offset, maxFacets, false);
         //What we return is the GraphNode we created with a template path
         return new RdfViewable("ContentStoreView", node, ContentStoreImpl.class);
     }
-    
+
     /**
      * Returns a GraphNode of type ContentStoreView.
-     * 
+     *
      * @param contentStoreUri The IRI of the content store to use
-     * @param contentStoreViewUri The IRI that shall be assigned to the returned view
+     * @param contentStoreViewUri The IRI that shall be assigned to the returned
+     * view
      * @param subjects The dc:subjects the matching content items shall have
      * @param searchs The search patterns the matching documents shall satisfy
      * @param items the number of items to return
@@ -206,7 +207,8 @@ public class ContentStoreImpl implements ContentStore {
             final List<String> searchs,
             Integer items,
             Integer offset,
-            Integer maxFacets) {
+            Integer maxFacets,
+            boolean withContent) {
         //the in memory graph to which the triples for the response are added
         final MGraph resultGraph = new IndexedMGraph();
         //This GraphNode represents the service within our result graph
@@ -258,7 +260,7 @@ public class ContentStoreImpl implements ContentStore {
                     Math.min(offset + items, matchingNodes.size())));
             for (Resource content : matchingContents) {
                 GraphNode cgContent = graphNodeProvider.getLocal((UriRef) content);
-                addRelevantDescription(cgContent, resultGraph);
+                addRelevantDescription(cgContent, resultGraph, withContent);
 
             }
         }
@@ -355,7 +357,7 @@ public class ContentStoreImpl implements ContentStore {
         //entity is a subject of.
         MGraph cg = contentGraphProvider.getContentGraph();
         Iterator<Triple> allOutgoing = cg.filter(iri, null, null);
-        while(allOutgoing.hasNext()) {
+        while (allOutgoing.hasNext()) {
             Triple t = allOutgoing.next();
             if (t.getPredicate().equals(RDF.type)) {
                 mGraph.add(t);
@@ -367,31 +369,37 @@ public class ContentStoreImpl implements ContentStore {
         }
     }
 
-    private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph) {
+    private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph, boolean withContent) {
         Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
-        while (valueIter.hasNext()) {
-            final Literal valueLit = valueIter.next();
-            final String textualContent = valueLit.getLexicalForm();
-            final String preview = textualContent.substring(
-                    0, Math.min(PREVIEW_LENGTH, textualContent.length()))
-                    .replace('\n', ' ')
-                    .replace("\r", "");
-            Language language = null;
-            if (valueLit instanceof PlainLiteral) {
-                language = ((PlainLiteral) valueLit).getLanguage();
+        if (!withContent) {
+            while (valueIter.hasNext()) {
+                final Literal valueLit = valueIter.next();
+                final String textualContent = valueLit.getLexicalForm();
+                final String preview = textualContent.substring(
+                        0, Math.min(PREVIEW_LENGTH, textualContent.length()))
+                        .replace('\n', ' ')
+                        .replace("\r", "");
+                Language language = null;
+                if (valueLit instanceof PlainLiteral) {
+                    language = ((PlainLiteral) valueLit).getLanguage();
+                }
+                resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
+                        new PlainLiteralImpl(preview, language)));
             }
-            resultGraph.add(new TripleImpl((NonLiteral)cgContent.getNode(), ECS.textPreview,
-                    new PlainLiteralImpl(preview, language)));
         }
-        copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_, 
+        copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
                 RDFS.comment, DC.description);
+        if (withContent) {
+            copyProperties(cgContent, resultGraph, SIOC.content);
+        }
     }
+
     private void copyProperties(GraphNode fromNode, MGraph toGraph, UriRef... properties) {
         for (UriRef property : properties) {
             Iterator<Resource> objects = fromNode.getObjects(property);
             while (objects.hasNext()) {
                 Resource object = objects.next();
-                toGraph.add(new TripleImpl((NonLiteral)fromNode.getNode(), 
+                toGraph.add(new TripleImpl((NonLiteral) fromNode.getNode(),
                         property, object));
             }
         }
