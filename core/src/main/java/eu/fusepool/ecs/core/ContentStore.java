@@ -91,6 +91,8 @@ public class ContentStore {
      */
     private static final Logger log = LoggerFactory.getLogger(ContentStore.class);
     public static final int PREVIEW_LENGTH = 200;
+    
+    final static UriRef MEDIA_TITLE = new UriRef("http://www.w3.org/ns/ma-ont#title");
     /**
      * This service allows accessing and creating persistent triple collections
      */
@@ -355,7 +357,7 @@ public class ContentStore {
                     new PlainLiteralImpl(preview, language)));
         }
         copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_, 
-                RDFS.comment, DC.description);
+                RDFS.comment, DC.description, MEDIA_TITLE);
     }
     private void copyProperties(GraphNode fromNode, MGraph toGraph, UriRef... properties) {
         for (UriRef property : properties) {

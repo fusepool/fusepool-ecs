@@ -23,8 +23,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import javax.ws.rs.core.MediaType;
+import org.apache.clerezza.rdf.core.BNode;
 import org.apache.clerezza.rdf.core.MGraph;
+import org.apache.clerezza.rdf.core.NonLiteral;
 import org.apache.clerezza.rdf.core.Resource;
+import org.apache.clerezza.rdf.core.Triple;
 import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
@@ -129,6 +132,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             String content = ContentItemHelper.getText(textBlob);
             node.addPropertyValue(SIOC.content, content);
             addSubjects(node, contentItem.getMetadata());
+            addDirectProperties(node, contentItem.getMetadata());
             getEnhancementGraph().addAll(contentItem.getMetadata());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -170,6 +174,16 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             final Representation representation = entity.getRepresentation();
             if (representation != null) {
                 valueFactory.toRdfRepresentation(representation);
+            }
+        }
+    }
+
+    private void addDirectProperties(GraphNode node, MGraph metadata) {
+        Iterator<Triple> triples = metadata.filter((NonLiteral)node.getNode(), null, null);
+        while (triples.hasNext()) {
+            Triple t = triples.next();
+            if (!(t.getObject() instanceof BNode)) {
+                node.addProperty(t.getPredicate(), t.getObject());
             }
         }
     }
