@@ -373,7 +373,7 @@ public class ContentStoreImpl implements ContentStore {
 
     private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph, boolean withContent) {
         Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
-        if (!withContent) {
+        //if (!withContent) {
             while (valueIter.hasNext()) {
                 final Literal valueLit = valueIter.next();
                 final String textualContent = valueLit.getLexicalForm();
@@ -388,7 +388,7 @@ public class ContentStoreImpl implements ContentStore {
                 resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
                         new PlainLiteralImpl(preview, language)));
             }
-        }
+        //}
         copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
                 RDFS.comment, DC.description, MEDIA_TITLE);
         if (withContent) {
