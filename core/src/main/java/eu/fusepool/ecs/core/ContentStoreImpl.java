@@ -6,6 +6,7 @@ import java.security.AllPermission;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -205,8 +206,8 @@ public class ContentStoreImpl implements ContentStore {
     @Override
     public GraphNode getContentStoreView(final UriRef contentStoreUri,
             final UriRef contentStoreViewUri,
-            final List<UriRef> subjects,
-            final List<String> searchs,
+            final Collection<UriRef> subjects,
+            final Collection<String> searchs,
             Integer items,
             Integer offset,
             Integer maxFacets,
