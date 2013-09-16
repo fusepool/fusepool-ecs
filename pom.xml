@@ -9,7 +9,7 @@
     <artifactId>ecs.parent</artifactId>
     <packaging>pom</packaging>
     <version>0.1-SNAPSHOT</version>
-    <name>Fusepool Enhancent Content Store</name>
+    <name>Fusepool Enhanced Content Store</name>
     <modules>
         <module>ontologies</module>
         <module>core</module>
