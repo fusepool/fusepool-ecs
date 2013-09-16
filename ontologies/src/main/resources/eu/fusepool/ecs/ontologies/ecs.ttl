@@ -20,8 +20,11 @@ added to the ContentStore.'''@en.
 resource contains query parameters with name "search" then the associated 
 content item will match each of the values of this parameters. If the name 
 of the resource contains query parameters "subject" the associated content 
-items will be contents having each of the specified resource as subjects. If
-the name of the resource contains a query parameter "items" the number of 
+items will be contents having each of the specified resource as dc:subject. 
+If the name 
+of the resource contains query parameters "type" the associated content 
+items will be contents having each of the specified resource as rdf:type.
+If the name of the resource contains a query parameter "items" the number of 
 associated content will not exceed the specified value. If
 the name of the resource contains a query parameter "offset" the specified 
 number of more relevant items will be omitted. If
@@ -52,8 +55,12 @@ the name of the instance of this class.'''.
 
 :subject a rdf:Property;
     skos:definition "A subject restrictions of the subject";
+    rdfs:domain :ContentStoreView.
+
+:type a rdf:Property;
+    skos:definition "A type restrictions of the subject";
     rdfs:domain :ContentStoreView;
-    rdfs:range xsd:String.
+    rdfs:range rdfs:Class.
 
 :store a rdf:Property;
 	skos:definition "Points to the list content item associated to the subject."@en;
@@ -79,5 +86,16 @@ Resources in the subject.'''@en;
 	rdfs:domain :Facet.
 
 :facetCount a rdf:Property;
-    skos:definition '''The count of the facet'''@en;
-	rdfs:domain :Facet.
+    skos:definition '''The count of the facet or type facet'''@en;
+	rdfs:domain [ a owl:Class;
+        owl:unionOf (:Facet :TypeFacet)].
+
+:typeFacet a rdf:Property;
+    skos:definition '''A facet of the subject.'''@en;
+	rdfs:domain :ContentStoreView;
+    rdfs:range :TypeFacet.
+
+:typeFacetValue a rdf:Property;
+    skos:definition '''The value of the type facet'''@en;
+	rdfs:domain :TypeFacet;
+        rdfs:range rdfs:Class.
