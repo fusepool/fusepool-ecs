@@ -131,8 +131,8 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
                     Collections.singleton("text/plain")).getValue();
             String content = ContentItemHelper.getText(textBlob);
             node.addPropertyValue(SIOC.content, content);
-            addSubjects(node, contentItem.getMetadata());
             addDirectProperties(node, contentItem.getMetadata());
+            addSubjects(node, contentItem.getMetadata());
             getEnhancementGraph().addAll(contentItem.getMetadata());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -155,10 +155,18 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
                 entities.add(entity);
             }
         }
-        for (UriRef uriRef : entities) {
+        final Iterator<Resource> subjects = node.getObjects(DC.subject);
+        //not just iterating over the added entities but also over the ones 
+        //it might already have
+        while (subjects.hasNext()) {
+            Resource subject = subjects.next();
+            if (!(subject instanceof UriRef)) continue;
+            final MGraph mGraph = (MGraph) node.getGraph();
             //We don't get the entity description directly from metadat
-            //as the context there would include
-            addResourceDescription(uriRef, (MGraph) node.getGraph());
+            //as the context there would include all documents this is the subject of
+            addResourceDescription((UriRef) subject, mGraph);
+            //addDirectProperties might be enough
+            mGraph.addAll(new GraphNode(subject, metadata).getNodeContext());
         }
     }
     

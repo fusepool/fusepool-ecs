@@ -42,4 +42,14 @@ public interface ContentStore {
             Integer items, Integer offset, Integer maxFacets,
             boolean withContent);
     
+    GraphNode getContentStoreView(final UriRef contentStoreUri,
+            final UriRef contentStoreViewUri,
+            final Collection<UriRef> subjects,
+            final Collection<UriRef> types,
+            final Collection<String> searchs,
+            Integer items,
+            Integer offset,
+            Integer maxFacets,
+            boolean withContent);
+    
 }

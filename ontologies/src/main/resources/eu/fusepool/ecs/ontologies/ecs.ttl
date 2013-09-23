@@ -83,7 +83,8 @@ Resources in the subject.'''@en;
 
 :facetValue a rdf:Property;
     skos:definition '''The value of the facet'''@en;
-	rdfs:domain :Facet.
+	rdfs:domain [ a owl:Class;
+        owl:unionOf (:Facet :TypeFacet)].
 
 :facetCount a rdf:Property;
     skos:definition '''The count of the facet or type facet'''@en;
@@ -94,8 +95,3 @@ Resources in the subject.'''@en;
     skos:definition '''A facet of the subject.'''@en;
 	rdfs:domain :ContentStoreView;
     rdfs:range :TypeFacet.
-
-:typeFacetValue a rdf:Property;
-    skos:definition '''The value of the type facet'''@en;
-	rdfs:domain :TypeFacet;
-        rdfs:range rdfs:Class.

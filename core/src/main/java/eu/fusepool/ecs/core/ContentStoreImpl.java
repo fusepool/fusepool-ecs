@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * graph. The client gets information and meta-information about the resource
  * and sees all previous requests for that resource.
  */
-@Component
+@Component(immediate=true)
 @Service({Object.class, ContentStore.class})
 @Property(name = "javax.ws.rs", boolValue = true)
 @Path("ecs")
@@ -128,6 +129,7 @@ public class ContentStoreImpl implements ContentStore {
         final VirtualProperty subjectLabel = new PathVirtualProperty(subjectLabelPath);
         indexProperties.add(subjectLabel);
         indexProperties.add(new PropertyHolder(DC.subject));
+        indexProperties.add(new PropertyHolder(RDF.type));
         indexService.addDefinitionVirtual(ECS.ContentItem, indexProperties);
     }
 
@@ -212,6 +214,21 @@ public class ContentStoreImpl implements ContentStore {
             Integer offset,
             Integer maxFacets,
             boolean withContent) {
+        return getContentStoreView(contentStoreUri, contentStoreViewUri, 
+                subjects, Collections.EMPTY_LIST, searchs, 
+                items, offset, maxFacets, withContent);
+    }
+    
+    @Override
+    public GraphNode getContentStoreView(final UriRef contentStoreUri,
+            final UriRef contentStoreViewUri,
+            final Collection<UriRef> subjects,
+            final Collection<UriRef> types,
+            final Collection<String> searchs,
+            Integer items,
+            Integer offset,
+            Integer maxFacets,
+            boolean withContent) {
         //the in memory graph to which the triples for the response are added
         final MGraph resultGraph = new IndexedMGraph();
         //This GraphNode represents the service within our result graph
@@ -225,6 +242,11 @@ public class ContentStoreImpl implements ContentStore {
             node.addProperty(ECS.subject, subject);
             conditions.add(new WildcardCondition(new PropertyHolder(DC.subject), subject.getUnicodeString()));
         }
+        for (UriRef type : types) {
+            addResourceDescription(type, resultGraph);
+            node.addProperty(ECS.type, type);
+            conditions.add(new WildcardCondition(new PropertyHolder(RDF.type), type.getUnicodeString()));
+        }
         for (String search : searchs) {
             node.addPropertyValue(ECS.search, search);
             conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*" + search.toLowerCase() + "*"));
@@ -232,27 +254,60 @@ public class ContentStoreImpl implements ContentStore {
         if (conditions.isEmpty()) {
             conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*"));
         }
+        final Set<VirtualProperty> facetProperties = new HashSet<VirtualProperty>();
+        facetProperties.add((VirtualProperty) new PropertyHolder(DC.subject));
+        facetProperties.add((VirtualProperty) new PropertyHolder(RDF.type));
+        
         final FacetCollector facetCollector = new CountFacetCollector(
-                Collections.singleton((VirtualProperty) new PropertyHolder(DC.subject)));
+                facetProperties);
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
-        final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
-        List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
-        Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
-            public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
-                return o2.getValue().compareTo(o1.getValue());
+        {
+            //facets
+            final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(DC.subject));
+            final List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
+            Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
+                public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
+                    return o2.getValue().compareTo(o1.getValue());
+                }
+            });
+            for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
+                Entry<String, Integer> entry = faceList.get(i);
+                final BNode facetResource = new BNode();
+                final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
+                node.addProperty(ECS.facet, facetResource);
+                final UriRef facetValue = new UriRef(entry.getKey());
+                final Integer facetCount = entry.getValue();
+                facetNode.addProperty(ECS.facetValue, facetValue);
+                addResourceDescription(facetValue, resultGraph);
+                facetNode.addPropertyValue(ECS.facetCount, facetCount);
             }
-        });
-        for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
-            Entry<String, Integer> entry = faceList.get(i);
-            final BNode facetResource = new BNode();
-            final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
-            node.addProperty(ECS.facet, facetResource);
-            final UriRef facetValue = new UriRef(entry.getKey());
-            final Integer facetCount = entry.getValue();
-            facetNode.addProperty(ECS.facetValue, facetValue);
-            addResourceDescription(facetValue, resultGraph);
-            facetNode.addPropertyValue(ECS.facetCount, facetCount);
+        }
+        {
+            //TODO remove code duplication
+            //type-facets
+            final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(RDF.type));
+            final List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
+            Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
+                public int compare(Entry<String, Integer> o1, Entry<String, Integer> o2) {
+                    return o2.getValue().compareTo(o1.getValue());
+                }
+            });
+            for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
+                Entry<String, Integer> entry = faceList.get(i);
+                final BNode facetResource = new BNode();
+                final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
+                node.addProperty(ECS.typeFacet, facetResource);
+                final UriRef facetValue = new UriRef(entry.getKey());
+                if (facetValue.equals(ECS.ContentItem) || facetValue.equals(DISCOBITS.InfoDiscoBit)) {
+                    i--;
+                    continue;
+                }
+                final Integer facetCount = entry.getValue();
+                facetNode.addProperty(ECS.facetValue, facetValue);
+                addResourceDescription(facetValue, resultGraph);
+                facetNode.addPropertyValue(ECS.facetCount, facetCount);
+            }
         }
         final NonLiteral matchingContentsList = new BNode();
         if (matchingNodes.size() > 0) {
@@ -335,9 +390,10 @@ public class ContentStoreImpl implements ContentStore {
     @Path("meta")
     public RdfViewable getMeta(@QueryParam("iri") final UriRef contentUri) {
         final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
-        final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
+        return new RdfViewable("Meta", nodeWithoutEnhancements, ContentStoreImpl.class);
+        /*final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
         return new RdfViewable("Meta", new GraphNode(contentUri,
-                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);
+                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);*/
     }
 
     /**
