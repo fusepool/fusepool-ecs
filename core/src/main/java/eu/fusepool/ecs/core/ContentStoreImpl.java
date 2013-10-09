@@ -260,7 +260,9 @@ public class ContentStoreImpl implements ContentStore {
         
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
+        //log.info("starting find");
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
+        //log.info("completed find");
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
         {
             //facets
@@ -286,6 +288,7 @@ public class ContentStoreImpl implements ContentStore {
         {
             //TODO remove code duplication
             //type-facets
+            //log.info("adding type facets");
             final Set<Map.Entry<String, Integer>> facets = facetCollector.getFacets(new PropertyHolder(RDF.type));
             final List<Map.Entry<String, Integer>> faceList = new ArrayList<Map.Entry<String, Integer>>(facets);
             Collections.sort(faceList, new Comparator<Entry<String, Integer>>() {
@@ -293,21 +296,23 @@ public class ContentStoreImpl implements ContentStore {
                     return o2.getValue().compareTo(o1.getValue());
                 }
             });
-            for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
+            int adaptedMaxFacets = maxFacets;
+            for (int i = 0; i < Math.min(adaptedMaxFacets, faceList.size()); i++) {
                 Entry<String, Integer> entry = faceList.get(i);
                 final BNode facetResource = new BNode();
                 final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
-                node.addProperty(ECS.typeFacet, facetResource);
                 final UriRef facetValue = new UriRef(entry.getKey());
                 if (facetValue.equals(ECS.ContentItem) || facetValue.equals(DISCOBITS.InfoDiscoBit)) {
-                    i--;
+                    adaptedMaxFacets++;
                     continue;
                 }
+                node.addProperty(ECS.typeFacet, facetResource);
                 final Integer facetCount = entry.getValue();
                 facetNode.addProperty(ECS.facetValue, facetValue);
                 addResourceDescription(facetValue, resultGraph);
                 facetNode.addPropertyValue(ECS.facetCount, facetCount);
             }
+            //log.info("added type facets");
         }
         final NonLiteral matchingContentsList = new BNode();
         if (matchingNodes.size() > 0) {
@@ -322,6 +327,7 @@ public class ContentStoreImpl implements ContentStore {
 
             }
         }
+        //log.info("returning node");
         return node;
     }
 
