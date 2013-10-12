@@ -295,14 +295,15 @@ public class ContentStoreImpl implements ContentStore {
                     return o2.getValue().compareTo(o1.getValue());
                 }
             });
-            for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
+            int maxFacetsAdapted = maxFacets;
+            for (int i = 0; i < Math.min(maxFacetsAdapted, faceList.size()); i++) {
                 Entry<String, Integer> entry = faceList.get(i);
                 final BNode facetResource = new BNode();
                 final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
                 node.addProperty(ECS.typeFacet, facetResource);
                 final UriRef facetValue = new UriRef(entry.getKey());
                 if (facetValue.equals(ECS.ContentItem) || facetValue.equals(DISCOBITS.InfoDiscoBit)) {
-                    i--;
+                    maxFacetsAdapted++;
                     continue;
                 }
                 final Integer facetCount = entry.getValue();
