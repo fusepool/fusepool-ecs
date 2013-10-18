@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import javax.ws.rs.core.MediaType;
 import org.apache.clerezza.rdf.core.BNode;
 import org.apache.clerezza.rdf.core.MGraph;
@@ -31,6 +32,7 @@ import org.apache.clerezza.rdf.core.Triple;
 import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
+import org.apache.clerezza.rdf.core.access.LockableMGraph;
 import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.access.security.TcAccessController;
 import org.apache.clerezza.rdf.core.access.security.TcPermission;
@@ -161,12 +163,14 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
         while (subjects.hasNext()) {
             Resource subject = subjects.next();
             if (!(subject instanceof UriRef)) continue;
-            final MGraph mGraph = (MGraph) node.getGraph();
+            final LockableMGraph mGraph = (LockableMGraph) node.getGraph();
             //We don't get the entity description directly from metadat
             //as the context there would include all documents this is the subject of
             addResourceDescription((UriRef) subject, mGraph);
-            //addDirectProperties might be enough
-            mGraph.addAll(new GraphNode(subject, metadata).getNodeContext());
+            final GraphNode graphNode = new GraphNode(subject, metadata);
+            //addDirectProperties or CBD instead of full context might be enough
+            //addCBD(graphNode, mGraph);
+            mGraph.addAll(graphNode.getNodeContext());
         }
     }
     
@@ -192,6 +196,29 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             Triple t = triples.next();
             if (!(t.getObject() instanceof BNode)) {
                 node.addProperty(t.getPredicate(), t.getObject());
+            }
+        }
+    }
+
+    private void addCBD(GraphNode graphNode, LockableMGraph target) {
+        final TripleCollection sourceMGraph = graphNode.getGraph();
+        final Resource node = graphNode.getNode();
+        if (node instanceof NonLiteral) {
+            Set<Resource> objects = new HashSet<Resource>();
+            Lock sl = graphNode.readLock();
+            sl.lock();
+            try {
+                Iterator<Triple> triples = sourceMGraph.filter((NonLiteral)node, null, null);
+                while(triples.hasNext()) {
+                    final Triple triple = triples.next();
+                    target.add(triple);
+                    objects.add(triple.getObject());
+                }
+            } finally {
+                sl.unlock();
+            }
+            for (Resource resource : objects) {
+                addCBD(new GraphNode(resource, sourceMGraph), target);
             }
         }
     }
