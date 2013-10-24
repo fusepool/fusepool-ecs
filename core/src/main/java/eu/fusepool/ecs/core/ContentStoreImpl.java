@@ -147,6 +147,7 @@ public class ContentStoreImpl implements ContentStore {
     @GET
     public RdfViewable serviceEntryPriviledged(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
+            @QueryParam("subject") final Collection<UriRef> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") final Integer items,
             @QueryParam("offset") final @DefaultValue("0") Integer offset,
@@ -156,7 +157,7 @@ public class ContentStoreImpl implements ContentStore {
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<RdfViewable>() {
                 public RdfViewable run() throws Exception {
-                    return serviceEntry(uriInfo, subjects, searchs, items, offset, maxFacets);
+                    return serviceEntry(uriInfo, subjects, types, searchs, items, offset, maxFacets);
                 }
             });
         } catch (PrivilegedActionException e) {
@@ -167,6 +168,7 @@ public class ContentStoreImpl implements ContentStore {
 
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
+            @QueryParam("subject") final Collection<UriRef> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") Integer items,
             @QueryParam("offset") @DefaultValue("0") Integer offset,
@@ -188,7 +190,7 @@ public class ContentStoreImpl implements ContentStore {
         //This is the URI without query params
         final UriRef contentStoreUri = new UriRef(uriInfo.getAbsolutePath().toString());
         GraphNode node = getContentStoreView(contentStoreUri, contentStoreViewUri,
-                subjects, searchs, items,
+                subjects, types, searchs, items,
                 offset, maxFacets, false);
         //What we return is the GraphNode we created with a template path
         return new RdfViewable("ContentStoreView", node, ContentStoreImpl.class);
