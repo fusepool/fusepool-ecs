@@ -61,7 +61,6 @@ import org.apache.clerezza.rdf.ontologies.RDFS;
 import org.apache.clerezza.rdf.ontologies.SIOC;
 import org.apache.clerezza.rdf.utils.GraphNode;
 import org.apache.clerezza.rdf.utils.RdfList;
-import org.apache.clerezza.rdf.utils.UnionMGraph;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -147,7 +146,7 @@ public class ContentStoreImpl implements ContentStore {
     @GET
     public RdfViewable serviceEntryPriviledged(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
-            @QueryParam("subject") final Collection<UriRef> types,
+            @QueryParam("type") final List<UriRef> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") final Integer items,
             @QueryParam("offset") final @DefaultValue("0") Integer offset,
@@ -168,7 +167,7 @@ public class ContentStoreImpl implements ContentStore {
 
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
             @QueryParam("subject") final List<UriRef> subjects,
-            @QueryParam("subject") final Collection<UriRef> types,
+            @QueryParam("type") final Collection<UriRef> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") Integer items,
             @QueryParam("offset") @DefaultValue("0") Integer offset,
