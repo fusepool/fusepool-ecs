@@ -439,27 +439,33 @@ public class ContentStoreImpl implements ContentStore {
     }
 
     private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph, boolean withContent) {
-        Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
-        //if (!withContent) {
-            while (valueIter.hasNext()) {
-                final Literal valueLit = valueIter.next();
-                final String textualContent = valueLit.getLexicalForm();
-                final String preview = textualContent.substring(
-                        0, Math.min(PREVIEW_LENGTH, textualContent.length()))
-                        .replace('\n', ' ')
-                        .replace("\r", "");
-                Language language = null;
-                if (valueLit instanceof PlainLiteral) {
-                    language = ((PlainLiteral) valueLit).getLanguage();
+        Lock l = cgContent.readLock();
+        l.lock();
+        try {
+            Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
+            //if (!withContent) {
+                while (valueIter.hasNext()) {
+                    final Literal valueLit = valueIter.next();
+                    final String textualContent = valueLit.getLexicalForm();
+                    final String preview = textualContent.substring(
+                            0, Math.min(PREVIEW_LENGTH, textualContent.length()))
+                            .replace('\n', ' ')
+                            .replace("\r", "");
+                    Language language = null;
+                    if (valueLit instanceof PlainLiteral) {
+                        language = ((PlainLiteral) valueLit).getLanguage();
+                    }
+                    resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
+                            new PlainLiteralImpl(preview, language)));
                 }
-                resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
-                        new PlainLiteralImpl(preview, language)));
+            //}
+            copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
+                    RDFS.comment, DC.description, MEDIA_TITLE);
+            if (withContent) {
+                copyProperties(cgContent, resultGraph, SIOC.content);
             }
-        //}
-        copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
-                RDFS.comment, DC.description, MEDIA_TITLE);
-        if (withContent) {
-            copyProperties(cgContent, resultGraph, SIOC.content);
+        } finally {
+            l.unlock();
         }
     }
 
