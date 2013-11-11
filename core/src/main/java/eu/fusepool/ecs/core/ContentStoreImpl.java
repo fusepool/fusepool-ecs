@@ -1,5 +1,6 @@
 package eu.fusepool.ecs.core;
 
+import eu.fusepool.ecs.core.intercept.Interceptor;
 import eu.fusepool.ecs.ontologies.ECS;
 import java.security.AccessController;
 import java.security.AllPermission;
@@ -67,6 +68,8 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.ReferencePolicy;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
 import org.apache.stanbol.commons.security.UserUtil;
@@ -84,8 +87,10 @@ import org.slf4j.LoggerFactory;
  * graph. The client gets information and meta-information about the resource
  * and sees all previous requests for that resource.
  */
-@Component(immediate=true)
+@Component(immediate = true)
 @Service({Object.class, ContentStore.class})
+@Reference(name = "interceptor", cardinality = ReferenceCardinality.OPTIONAL_MULTIPLE,
+        referenceInterface = Interceptor.class, policy = ReferencePolicy.DYNAMIC)
 @Property(name = "javax.ws.rs", boolValue = true)
 @Path("ecs")
 public class ContentStoreImpl implements ContentStore {
@@ -96,7 +101,7 @@ public class ContentStoreImpl implements ContentStore {
     private static final Logger log = LoggerFactory.getLogger(ContentStoreImpl.class);
     public static final int PREVIEW_LENGTH = 200;
     final static UriRef MEDIA_TITLE = new UriRef("http://www.w3.org/ns/ma-ont#title");
-
+    private final static String CONTENT_PREFIX = "content/";
     /**
      * This service allows accessing and creating persistent triple collections
      */
@@ -116,8 +121,8 @@ public class ContentStoreImpl implements ContentStore {
     @Reference
     private SiteManager siteManager;
     private LiteralFactory literalFactory = LiteralFactory.getInstance();
-    private final static String CONTENT_PREFIX = "content/";
-    //private int MAX_FACETS = 10;
+    private Collection<Interceptor> interceptors =
+            Collections.synchronizedCollection(new HashSet<Interceptor>());
 
     @Activate
     protected void activate(ComponentContext context) {
@@ -217,13 +222,42 @@ public class ContentStoreImpl implements ContentStore {
             Integer offset,
             Integer maxFacets,
             boolean withContent) {
-        return getContentStoreView(contentStoreUri, contentStoreViewUri, 
-                subjects, Collections.EMPTY_LIST, searchs, 
+        return getContentStoreView(contentStoreUri, contentStoreViewUri,
+                subjects, Collections.EMPTY_LIST, searchs,
                 items, offset, maxFacets, withContent);
     }
-    
+
+    public GraphNode getContentStoreView(UriRef contentStoreUri,
+            UriRef contentStoreViewUri,
+            Collection<UriRef> subjects,
+            Collection<UriRef> types,
+            Collection<String> searchs,
+            Integer items,
+            Integer offset,
+            Integer maxFacets,
+            boolean withContent) {
+        return getContentStoreView(new Query(contentStoreUri,
+                contentStoreViewUri,
+                subjects, types, searchs, items, offset, maxFacets, withContent));
+    }
+
     @Override
-    public GraphNode getContentStoreView(final UriRef contentStoreUri,
+    public GraphNode getContentStoreView(final Query query) {
+        final Query interceptedQuery = interceptQuery(query);
+        final GraphNode result = createContentStoreView(interceptedQuery.getContentStoreUri(),
+                query.getContentStoreViewUri(),
+                query.getSubjects(),
+                query.getTypes(),
+                query.getSearchs(),
+                query.getItems(),
+                query.getOffset(),
+                query.getMaxFacets(),
+                query.isWithContent());
+        return interceptResult(interceptedQuery, result);
+
+    }
+
+    private GraphNode createContentStoreView(final UriRef contentStoreUri,
             final UriRef contentStoreViewUri,
             final Collection<UriRef> subjects,
             final Collection<UriRef> types,
@@ -260,7 +294,7 @@ public class ContentStoreImpl implements ContentStore {
         final Set<VirtualProperty> facetProperties = new HashSet<VirtualProperty>();
         facetProperties.add((VirtualProperty) new PropertyHolder(DC.subject));
         facetProperties.add((VirtualProperty) new PropertyHolder(RDF.type));
-        
+
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
@@ -394,10 +428,11 @@ public class ContentStoreImpl implements ContentStore {
     @Path("meta")
     public RdfViewable getMeta(@QueryParam("iri") final UriRef contentUri) {
         final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
+        notifyMetaRequest(contentUri);
         return new RdfViewable("Meta", nodeWithoutEnhancements, ContentStoreImpl.class);
         /*final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
-        return new RdfViewable("Meta", new GraphNode(contentUri,
-                new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);*/
+         return new RdfViewable("Meta", new GraphNode(contentUri,
+         new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);*/
     }
 
     /**
@@ -444,20 +479,20 @@ public class ContentStoreImpl implements ContentStore {
         try {
             Iterator<Literal> valueIter = cgContent.getLiterals(SIOC.content);
             //if (!withContent) {
-                while (valueIter.hasNext()) {
-                    final Literal valueLit = valueIter.next();
-                    final String textualContent = valueLit.getLexicalForm();
-                    final String preview = textualContent.substring(
-                            0, Math.min(PREVIEW_LENGTH, textualContent.length()))
-                            .replace('\n', ' ')
-                            .replace("\r", "");
-                    Language language = null;
-                    if (valueLit instanceof PlainLiteral) {
-                        language = ((PlainLiteral) valueLit).getLanguage();
-                    }
-                    resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
-                            new PlainLiteralImpl(preview, language)));
+            while (valueIter.hasNext()) {
+                final Literal valueLit = valueIter.next();
+                final String textualContent = valueLit.getLexicalForm();
+                final String preview = textualContent.substring(
+                        0, Math.min(PREVIEW_LENGTH, textualContent.length()))
+                        .replace('\n', ' ')
+                        .replace("\r", "");
+                Language language = null;
+                if (valueLit instanceof PlainLiteral) {
+                    language = ((PlainLiteral) valueLit).getLanguage();
                 }
+                resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
+                        new PlainLiteralImpl(preview, language)));
+            }
             //}
             copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
                     RDFS.comment, DC.description, MEDIA_TITLE);
@@ -478,5 +513,48 @@ public class ContentStoreImpl implements ContentStore {
                         property, object));
             }
         }
+    }
+
+    private Query interceptQuery(final Query query) {
+        final Iterator<Interceptor> iter = interceptors.iterator();
+        return interceptQuery(iter, query);
+    }
+
+    private Query interceptQuery(final Iterator<Interceptor> iter,
+            final Query query) {
+        if (iter.hasNext()) {
+            return interceptQuery(iter, iter.next().interceptQuery(query));
+        } else {
+            return query;
+        }
+    }
+
+    private GraphNode interceptResult(final Query query,final GraphNode graphNode) {
+        final Iterator<Interceptor> iter = interceptors.iterator();
+        return interceptResult(iter, query, graphNode);
+    }
+
+    private GraphNode interceptResult(final Iterator<Interceptor> iter,
+            final Query query, final GraphNode graphNode) {
+        if (iter.hasNext()) {
+            return interceptResult(iter, query, iter.next().interceptResult(query, graphNode));
+        } else {
+            return graphNode;
+        }
+    }
+
+    private void notifyMetaRequest(UriRef contentUri) {
+        //could do tis async
+        for (Interceptor interceptor : interceptors) {
+            interceptor.notifyMetaRequest(contentUri);
+        }
+    }
+
+    protected void bindInterceptor(Interceptor interceptor) {
+        interceptors.add(interceptor);
+    }
+
+    protected void unbindInterceptor(Interceptor interceptor) {
+        interceptors.remove(interceptor);
     }
 }

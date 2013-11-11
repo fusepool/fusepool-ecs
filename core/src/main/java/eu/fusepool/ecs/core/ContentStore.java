@@ -36,12 +36,14 @@ public interface ContentStore {
      * @param withContent true if the SIOC:content properties shall be included in the result
      * @return a GraphNode describing the ContentStoreView
      */
+    @Deprecated
     GraphNode getContentStoreView(final UriRef contentStoreUri, 
             final UriRef contentStoreViewUri, final Collection<UriRef> subjects, 
             final Collection<String> searchs, 
             Integer items, Integer offset, Integer maxFacets,
             boolean withContent);
     
+    @Deprecated
     GraphNode getContentStoreView(final UriRef contentStoreUri,
             final UriRef contentStoreViewUri,
             final Collection<UriRef> subjects,
@@ -51,5 +53,7 @@ public interface ContentStore {
             Integer offset,
             Integer maxFacets,
             boolean withContent);
+    
+    GraphNode getContentStoreView(final Query query);
     
 }
