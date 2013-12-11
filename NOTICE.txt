@@ -1,0 +1,5 @@
+Fusepool Enhanced content Store
+Copyright 2012-2013 Fusepool.eu Project Partners
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
