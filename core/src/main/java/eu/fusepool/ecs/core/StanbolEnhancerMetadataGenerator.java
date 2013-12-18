@@ -157,11 +157,16 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
                 entities.add(entity);
             }
         }
-        final Iterator<Resource> subjects = node.getObjects(DC.subject);
+        
         //not just iterating over the added entities but also over the ones 
         //it might already have
-        while (subjects.hasNext()) {
+        final Iterator<Resource> subjects = node.getObjects(DC.subject);
+        final Set<Resource> subjectSet = new HashSet<Resource>();
+        while (subjects.hasNext()) {   
             Resource subject = subjects.next();
+            subjectSet.add(subject);
+        }
+        for (Resource subject : subjectSet) {
             if (!(subject instanceof UriRef)) continue;
             final LockableMGraph mGraph = (LockableMGraph) node.getGraph();
             //We don't get the entity description directly from metadat
