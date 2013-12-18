@@ -50,6 +50,7 @@ import org.apache.clerezza.rdf.core.impl.TripleImpl;
 import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
 import org.apache.clerezza.rdf.cris.FacetCollector;
+import org.apache.clerezza.rdf.cris.JoinVirtualProperty;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
 import org.apache.clerezza.rdf.cris.PropertyHolder;
 import org.apache.clerezza.rdf.cris.VirtualProperty;
@@ -123,19 +124,30 @@ public class ContentStoreImpl implements ContentStore {
     private LiteralFactory literalFactory = LiteralFactory.getInstance();
     private Collection<Interceptor> interceptors =
             Collections.synchronizedCollection(new HashSet<Interceptor>());
+    
+    final private VirtualProperty subjectLabel, labelsAndContent;
+    private final PropertyHolder contentProperty = new PropertyHolder(SIOC.content);
+
+    public ContentStoreImpl() {
+        final List<UriRef> subjectLabelPath = new ArrayList<UriRef>();
+        subjectLabelPath.add(DC.subject);
+        subjectLabelPath.add(RDFS.label);
+        subjectLabel = new PathVirtualProperty(subjectLabelPath, false);
+        List<VirtualProperty> joinedProperties = new ArrayList<VirtualProperty>();
+        joinedProperties.add(contentProperty);
+        joinedProperties.add(subjectLabel);
+        labelsAndContent = new JoinVirtualProperty(joinedProperties,false);
+    }
 
     @Activate
     protected void activate(ComponentContext context) {
         log.info("Enhanced Content Store being activated");
         final List<VirtualProperty> indexProperties = new ArrayList<VirtualProperty>();
-        indexProperties.add(new PropertyHolder(SIOC.content));
-        final List<UriRef> subjectLabelPath = new ArrayList<UriRef>();
-        subjectLabelPath.add(DC.subject);
-        subjectLabelPath.add(RDFS.label);
-        final VirtualProperty subjectLabel = new PathVirtualProperty(subjectLabelPath);
-        indexProperties.add(subjectLabel);
-        indexProperties.add(new PropertyHolder(DC.subject));
-        indexProperties.add(new PropertyHolder(RDF.type));
+        //indexProperties.add(contentProperty);
+        //indexProperties.add(subjectLabel);
+        indexProperties.add(labelsAndContent);
+        indexProperties.add(new PropertyHolder(DC.subject, true));
+        indexProperties.add(new PropertyHolder(RDF.type, true));
         indexService.addDefinitionVirtual(ECS.ContentItem, indexProperties);
     }
 
@@ -286,10 +298,12 @@ public class ContentStoreImpl implements ContentStore {
         }
         for (String search : searchs) {
             node.addPropertyValue(ECS.search, search);
-            conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*" + search.toLowerCase() + "*"));
+            //conditions.add(new WildcardCondition(contentProperty, "*" + search.toLowerCase() + "*"));
+            //conditions.add(new WildcardCondition(subjectLabel, "*" + search.toLowerCase() + "*"));
+            conditions.add(new WildcardCondition(labelsAndContent, "*" + search.toLowerCase() + "*"));
         }
         if (conditions.isEmpty()) {
-            conditions.add(new WildcardCondition(new PropertyHolder(SIOC.content), "*"));
+            conditions.add(new WildcardCondition(contentProperty, "*"));
         }
         final Set<VirtualProperty> facetProperties = new HashSet<VirtualProperty>();
         facetProperties.add((VirtualProperty) new PropertyHolder(DC.subject));
