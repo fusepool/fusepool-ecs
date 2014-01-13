@@ -514,7 +514,7 @@ public class ContentStoreImpl implements ContentStore {
                         new PlainLiteralImpl(preview, language)));
             }
             //}
-            copyProperties(cgContent, resultGraph, DCTERMS.title, DCTERMS.abstract_,
+            copyProperties(cgContent, resultGraph, RDF.type, DCTERMS.title, DCTERMS.abstract_,
                     RDFS.comment, DC.description, MEDIA_TITLE);
             if (withContent) {
                 copyProperties(cgContent, resultGraph, SIOC.content);
