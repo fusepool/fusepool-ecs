@@ -311,6 +311,10 @@ public class ContentStoreImpl implements ContentStore {
 
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
+        
+        log.info("WASSSSUUUUUUUUUUP");
+        
+        
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
         {
