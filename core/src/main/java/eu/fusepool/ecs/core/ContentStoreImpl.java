@@ -47,7 +47,9 @@ import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
 import org.apache.clerezza.rdf.core.impl.SimpleMGraph;
 import org.apache.clerezza.rdf.core.impl.TripleImpl;
+import org.apache.clerezza.rdf.cris.BoostCondition;
 import org.apache.clerezza.rdf.cris.Condition;
+import org.apache.clerezza.rdf.cris.BoostCondition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
 import org.apache.clerezza.rdf.cris.FacetCollector;
 import org.apache.clerezza.rdf.cris.JoinVirtualProperty;
@@ -312,8 +314,8 @@ public class ContentStoreImpl implements ContentStore {
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
         
-        log.info("WASSSSUUUUUUUUUUP");
-        
+
+        conditions.add(new BoostCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
         
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
