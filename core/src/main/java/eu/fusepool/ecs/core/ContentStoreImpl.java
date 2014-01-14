@@ -47,14 +47,13 @@ import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
 import org.apache.clerezza.rdf.core.impl.SimpleMGraph;
 import org.apache.clerezza.rdf.core.impl.TripleImpl;
-import org.apache.clerezza.rdf.cris.BoostCondition;
 import org.apache.clerezza.rdf.cris.Condition;
-import org.apache.clerezza.rdf.cris.BoostCondition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
 import org.apache.clerezza.rdf.cris.FacetCollector;
 import org.apache.clerezza.rdf.cris.JoinVirtualProperty;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
 import org.apache.clerezza.rdf.cris.PropertyHolder;
+import org.apache.clerezza.rdf.cris.TermCondition;
 import org.apache.clerezza.rdf.cris.VirtualProperty;
 import org.apache.clerezza.rdf.cris.WildcardCondition;
 import org.apache.clerezza.rdf.ontologies.DC;
@@ -315,7 +314,7 @@ public class ContentStoreImpl implements ContentStore {
                 facetProperties);
         
 
-        conditions.add(new BoostCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
+        conditions.add(new TermCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
         
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
