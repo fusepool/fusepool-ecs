@@ -320,12 +320,14 @@ public class ContentStoreImpl implements ContentStore {
 
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
-        
+
         String stuff = "";
         for (String search : searchs) {
           stuff += search;
         }
         stuff = stuff.trim();
+                
+        conditions.add(new TermCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
         String userName = "<http://fusepool.info/users/anonymous>";
         
         try {
