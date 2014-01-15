@@ -54,6 +54,7 @@ import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
 import org.apache.clerezza.rdf.cris.FacetCollector;
 import org.apache.clerezza.rdf.cris.JoinVirtualProperty;
+import org.apache.clerezza.rdf.cris.KeywordCondition;
 import org.apache.clerezza.rdf.cris.PathVirtualProperty;
 import org.apache.clerezza.rdf.cris.PropertyHolder;
 import org.apache.clerezza.rdf.cris.TermCondition;
@@ -123,6 +124,7 @@ public class ContentStoreImpl implements ContentStore {
     private ContentGraphProvider contentGraphProvider;
     @Reference
     private HubEngine predictionHub;
+    
     /**
      * This service allows to get entities from configures sites
      */
@@ -307,7 +309,7 @@ public class ContentStoreImpl implements ContentStore {
             node.addPropertyValue(ECS.search, search);
             //conditions.add(new WildcardCondition(contentProperty, "*" + search.toLowerCase() + "*"));
             //conditions.add(new WildcardCondition(subjectLabel, "*" + search.toLowerCase() + "*"));
-            Condition cc = new WildcardCondition(labelsAndContent, "*" + search.toLowerCase() + "*");
+            Condition cc = new TermCondition(labelsAndContent, search.toLowerCase());
             cc.setBooleanClause(BooleanClause.Occur.MUST);
             conditions.add(cc);
         }
@@ -326,8 +328,10 @@ public class ContentStoreImpl implements ContentStore {
           stuff += search;
         }
         stuff = stuff.trim();
-                
-        conditions.add(new TermCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
+          
+        
+        //conditions.add(new KeywordCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
+        conditions.add(new KeywordCondition(RDF.type, "http://www.patexpert.org/ontologies/pmo.owl#PatentPublication",0.4f));
         String userName = "<http://fusepool.info/users/anonymous>";
         
         try {
