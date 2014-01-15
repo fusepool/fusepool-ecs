@@ -1,5 +1,6 @@
 package eu.fusepool.ecs.core;
 
+import com.xerox.services.HubEngine;
 import eu.fusepool.ecs.core.intercept.Interceptor;
 import eu.fusepool.ecs.ontologies.ECS;
 import java.security.AccessController;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -118,6 +120,8 @@ public class ContentStoreImpl implements ContentStore {
     private GraphNodeProvider graphNodeProvider;
     @Reference
     private ContentGraphProvider contentGraphProvider;
+    @Reference
+    private HubEngine predictionHub;
     /**
      * This service allows to get entities from configures sites
      */
@@ -315,7 +319,6 @@ public class ContentStoreImpl implements ContentStore {
 
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
-        
 
         String stuff = "";
         for (String search : searchs) {
@@ -324,6 +327,18 @@ public class ContentStoreImpl implements ContentStore {
         stuff = stuff.trim();
                 
         conditions.add(new TermCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
+        String userName = "<http://fusepool.info/users/anonymous>";
+        
+        HashMap<String,String> predictionParams = new HashMap<String, String>();
+        predictionParams.put("user", userName);
+        predictionParams.put("query", stuff);
+        String predictedBoosts = predictionHub.predict("LUP25",predictionParams);
+        for (String pair : predictedBoosts.split("##")) {
+            String key = pair.split("__")[0];
+            String value = pair.split("__")[1];
+            value = value.substring(3, value.length()-2);
+            conditions.add(new TermCondition(RDF.type, key, Float.parseFloat(value)));
+        }
         
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
