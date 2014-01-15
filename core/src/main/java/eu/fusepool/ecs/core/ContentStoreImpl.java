@@ -43,6 +43,7 @@ import org.apache.clerezza.rdf.core.NonLiteral;
 import org.apache.clerezza.rdf.core.PlainLiteral;
 import org.apache.clerezza.rdf.core.Resource;
 import org.apache.clerezza.rdf.core.Triple;
+import org.apache.clerezza.rdf.core.TripleCollection;
 import org.apache.clerezza.rdf.core.UriRef;
 import org.apache.clerezza.rdf.core.access.LockableMGraph;
 import org.apache.clerezza.rdf.core.access.TcManager;
@@ -327,15 +328,25 @@ public class ContentStoreImpl implements ContentStore {
         stuff = stuff.trim();
         String userName = "<http://fusepool.info/users/anonymous>";
         
-        HashMap<String,String> predictionParams = new HashMap<String, String>();
-        predictionParams.put("user", userName);
-        predictionParams.put("query", stuff);
-        String predictedBoosts = predictionHub.predict("LUP25",predictionParams);
-        for (String pair : predictedBoosts.split("##")) {
-            String key = pair.split("__")[0];
-            String value = pair.split("__")[1];
-            value = value.substring(3, value.length()-2);
-            conditions.add(new TermCondition(RDF.type, key, Float.parseFloat(value)));
+        try {
+            HashMap<String,String> predictionParams = new HashMap<String, String>();
+            predictionParams.put("user", userName);
+            predictionParams.put("query", stuff);
+            String predictedBoosts = predictionHub.predict("LUP25",predictionParams);
+            if (predictedBoosts.contains("##")) {
+                for (String pair : predictedBoosts.split("##")) {
+                    String key = pair.split("__")[0];
+                    String value = pair.split("__")[1];
+                    value = value.substring(3, value.length()-2);
+                    log.info("Using boosts " + key + " : " + value);
+                    conditions.add(new TermCondition(RDF.type, key, Float.parseFloat(value)*10));
+                }
+            } else {
+                log.info("Server T2.5 not available");
+            }
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
         }
         
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
