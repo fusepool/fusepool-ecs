@@ -73,6 +73,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.ReferencePolicy;
 import org.apache.felix.scr.annotations.Service;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
 import org.apache.stanbol.commons.security.UserUtil;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
@@ -301,7 +302,9 @@ public class ContentStoreImpl implements ContentStore {
             node.addPropertyValue(ECS.search, search);
             //conditions.add(new WildcardCondition(contentProperty, "*" + search.toLowerCase() + "*"));
             //conditions.add(new WildcardCondition(subjectLabel, "*" + search.toLowerCase() + "*"));
-            conditions.add(new WildcardCondition(labelsAndContent, "*" + search.toLowerCase() + "*"));
+            Condition cc = new WildcardCondition(labelsAndContent, "*" + search.toLowerCase() + "*");
+            cc.setBooleanClause(BooleanClause.Occur.MUST);
+            conditions.add(cc);
         }
         if (conditions.isEmpty()) {
             conditions.add(new WildcardCondition(contentProperty, "*"));
@@ -314,6 +317,12 @@ public class ContentStoreImpl implements ContentStore {
                 facetProperties);
         
 
+        String stuff = "";
+        for (String search : searchs) {
+          stuff += search;
+        }
+        stuff = stuff.trim();
+                
         conditions.add(new TermCondition(RDF.type, "http://purl.org/ontology/bibo/Document",0.4f));
         
         final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
