@@ -100,7 +100,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             tcManager.createMGraph(ENHANCEMENTS_GRAPH);
             //now make sure everybody can read from the graph
             //or more precisly, anybody who can read the content-graph
-            TcAccessController tca = new TcAccessController(tcManager);
+            TcAccessController tca = tcManager.getTcAccessController();
             tca.setRequiredReadPermissions(ENHANCEMENTS_GRAPH,
                     Collections.singleton((Permission) new TcPermission(
                     "urn:x-localinstance:/content.graph", "read")));
