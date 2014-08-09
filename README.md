@@ -28,7 +28,13 @@ a Link-header like
 
 will point to the rdf describing the resource in the
 content graph. (Note that this is not the full RDF produced by the
-enhancer. This RDF is stored in a graph named:
+enhancer.
+
+That RDF resource can be accessed using this command:
+
+curl -X GET -u "admin:admin" -H "Accept: application/rdf+xml" http://localhost:8080/ecs/content/ebaa4a3277f3299cb3fd9e69367f2c4a.meta
+
+This RDF is stored in a graph named:
 urn:x-localhost:/ecs-collected-enhancements.graph)
 
 To get all documents related to <http://dbpedia.org/resource/Europe> get
