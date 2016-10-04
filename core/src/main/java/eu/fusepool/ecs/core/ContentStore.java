@@ -17,7 +17,7 @@ package eu.fusepool.ecs.core;
 
 import java.util.Collection;
 import java.util.List;
-import org.apache.clerezza.rdf.core.UriRef;
+import org.apache.clerezza.commons.rdf.IRI;
 import org.apache.clerezza.rdf.utils.GraphNode;
 
 
@@ -37,17 +37,17 @@ public interface ContentStore {
      * @return a GraphNode describing the ContentStoreView
      */
     @Deprecated
-    GraphNode getContentStoreView(final UriRef contentStoreUri, 
-            final UriRef contentStoreViewUri, final Collection<UriRef> subjects, 
+    GraphNode getContentStoreView(final IRI contentStoreUri, 
+            final IRI contentStoreViewUri, final Collection<IRI> subjects, 
             final Collection<String> searchs, 
             Integer items, Integer offset, Integer maxFacets,
             boolean withContent);
     
     @Deprecated
-    GraphNode getContentStoreView(final UriRef contentStoreUri,
-            final UriRef contentStoreViewUri,
-            final Collection<UriRef> subjects,
-            final Collection<UriRef> types,
+    GraphNode getContentStoreView(final IRI contentStoreUri,
+            final IRI contentStoreViewUri,
+            final Collection<IRI> subjects,
+            final Collection<IRI> types,
             final Collection<String> searchs,
             Integer items,
             Integer offset,

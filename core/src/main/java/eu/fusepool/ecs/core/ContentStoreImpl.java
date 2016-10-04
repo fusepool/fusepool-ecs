@@ -27,26 +27,24 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.apache.clerezza.commons.rdf.BlankNode;
+import org.apache.clerezza.commons.rdf.BlankNodeOrIRI;
+import org.apache.clerezza.commons.rdf.Graph;
+import org.apache.clerezza.commons.rdf.IRI;
+import org.apache.clerezza.commons.rdf.Language;
+import org.apache.clerezza.commons.rdf.Literal;
+import org.apache.clerezza.commons.rdf.RDFTerm;
+import org.apache.clerezza.commons.rdf.Triple;
+import org.apache.clerezza.commons.rdf.impl.utils.PlainLiteralImpl;
+import org.apache.clerezza.commons.rdf.impl.utils.TripleImpl;
+import org.apache.clerezza.commons.rdf.impl.utils.simple.SimpleGraph;
 import org.apache.clerezza.jaxrs.utils.TrailingSlash;
 import org.apache.clerezza.platform.content.DiscobitsHandler;
 import org.apache.clerezza.platform.cris.IndexService;
 import org.apache.clerezza.rdf.utils.graphnodeprovider.GraphNodeProvider;
 import org.apache.clerezza.platform.graphprovider.content.ContentGraphProvider;
-import org.apache.clerezza.rdf.core.BNode;
-import org.apache.clerezza.rdf.core.Language;
-import org.apache.clerezza.rdf.core.Literal;
 import org.apache.clerezza.rdf.core.LiteralFactory;
-import org.apache.clerezza.rdf.core.MGraph;
-import org.apache.clerezza.rdf.core.NonLiteral;
-import org.apache.clerezza.rdf.core.PlainLiteral;
-import org.apache.clerezza.rdf.core.Resource;
-import org.apache.clerezza.rdf.core.Triple;
-import org.apache.clerezza.rdf.core.UriRef;
-import org.apache.clerezza.rdf.core.access.LockableMGraph;
 import org.apache.clerezza.rdf.core.access.TcManager;
-import org.apache.clerezza.rdf.core.impl.PlainLiteralImpl;
-import org.apache.clerezza.rdf.core.impl.SimpleMGraph;
-import org.apache.clerezza.rdf.core.impl.TripleImpl;
 import org.apache.clerezza.rdf.cris.Condition;
 import org.apache.clerezza.rdf.cris.CountFacetCollector;
 import org.apache.clerezza.rdf.cris.FacetCollector;
@@ -72,7 +70,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.ReferencePolicy;
 import org.apache.felix.scr.annotations.Service;
-import org.apache.stanbol.commons.indexedgraph.IndexedMGraph;
+import org.apache.stanbol.commons.indexedgraph.IndexedGraph;
 import org.apache.stanbol.commons.security.UserUtil;
 import org.apache.stanbol.commons.web.viewable.RdfViewable;
 import org.apache.stanbol.entityhub.model.clerezza.RdfValueFactory;
@@ -101,7 +99,7 @@ public class ContentStoreImpl implements ContentStore {
      */
     private static final Logger log = LoggerFactory.getLogger(ContentStoreImpl.class);
     public static final int PREVIEW_LENGTH = 200;
-    final static UriRef MEDIA_TITLE = new UriRef("http://www.w3.org/ns/ma-ont#title");
+    final static IRI MEDIA_TITLE = new IRI("http://www.w3.org/ns/ma-ont#title");
     private final static String CONTENT_PREFIX = "content/";
     /**
      * This service allows accessing and creating persistent triple collections
@@ -129,7 +127,7 @@ public class ContentStoreImpl implements ContentStore {
     private final PropertyHolder contentProperty = new PropertyHolder(SIOC.content);
 
     public ContentStoreImpl() {
-        final List<UriRef> subjectLabelPath = new ArrayList<UriRef>();
+        final List<IRI> subjectLabelPath = new ArrayList<IRI>();
         subjectLabelPath.add(DC.subject);
         subjectLabelPath.add(RDFS.label);
         subjectLabel = new PathVirtualProperty(subjectLabelPath, false);
@@ -162,8 +160,8 @@ public class ContentStoreImpl implements ContentStore {
      */
     @GET
     public RdfViewable serviceEntryPriviledged(@Context final UriInfo uriInfo,
-            @QueryParam("subject") final List<UriRef> subjects,
-            @QueryParam("type") final List<UriRef> types,
+            @QueryParam("subject") final List<IRI> subjects,
+            @QueryParam("type") final List<IRI> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") final Integer items,
             @QueryParam("offset") final @DefaultValue("0") Integer offset,
@@ -183,8 +181,8 @@ public class ContentStoreImpl implements ContentStore {
     }
 
     public RdfViewable serviceEntry(@Context final UriInfo uriInfo,
-            @QueryParam("subject") final List<UriRef> subjects,
-            @QueryParam("type") final Collection<UriRef> types,
+            @QueryParam("subject") final List<IRI> subjects,
+            @QueryParam("type") final Collection<IRI> types,
             @QueryParam("search") final List<String> searchs,
             @QueryParam("items") Integer items,
             @QueryParam("offset") @DefaultValue("0") Integer offset,
@@ -202,9 +200,9 @@ public class ContentStoreImpl implements ContentStore {
             viewUriString += "items=10";
             items = 10;
         }
-        final UriRef contentStoreViewUri = new UriRef(viewUriString);
+        final IRI contentStoreViewUri = new IRI(viewUriString);
         //This is the URI without query params
-        final UriRef contentStoreUri = new UriRef(uriInfo.getAbsolutePath().toString());
+        final IRI contentStoreUri = new IRI(uriInfo.getAbsolutePath().toString());
         GraphNode node = getContentStoreView(contentStoreUri, contentStoreViewUri,
                 subjects, types, searchs, items,
                 offset, maxFacets, false);
@@ -226,9 +224,9 @@ public class ContentStoreImpl implements ContentStore {
      * @return a GraphNode describing the ContentStoreView
      */
     @Override
-    public GraphNode getContentStoreView(final UriRef contentStoreUri,
-            final UriRef contentStoreViewUri,
-            final Collection<UriRef> subjects,
+    public GraphNode getContentStoreView(final IRI contentStoreUri,
+            final IRI contentStoreViewUri,
+            final Collection<IRI> subjects,
             final Collection<String> searchs,
             Integer items,
             Integer offset,
@@ -239,10 +237,10 @@ public class ContentStoreImpl implements ContentStore {
                 items, offset, maxFacets, withContent);
     }
 
-    public GraphNode getContentStoreView(UriRef contentStoreUri,
-            UriRef contentStoreViewUri,
-            Collection<UriRef> subjects,
-            Collection<UriRef> types,
+    public GraphNode getContentStoreView(IRI contentStoreUri,
+            IRI contentStoreViewUri,
+            Collection<IRI> subjects,
+            Collection<IRI> types,
             Collection<String> searchs,
             Integer items,
             Integer offset,
@@ -269,29 +267,29 @@ public class ContentStoreImpl implements ContentStore {
 
     }
 
-    private GraphNode createContentStoreView(final UriRef contentStoreUri,
-            final UriRef contentStoreViewUri,
-            final Collection<UriRef> subjects,
-            final Collection<UriRef> types,
+    private GraphNode createContentStoreView(final IRI contentStoreUri,
+            final IRI contentStoreViewUri,
+            final Collection<IRI> subjects,
+            final Collection<IRI> types,
             final Collection<String> searchs,
             Integer items,
             Integer offset,
             Integer maxFacets,
             boolean withContent) {
         //the in memory graph to which the triples for the response are added
-        final MGraph resultGraph = new IndexedMGraph();
+        final Graph resultGraph = new IndexedGraph();
         //This GraphNode represents the service within our result graph
         final GraphNode node = new GraphNode(contentStoreViewUri, resultGraph);
         node.addProperty(RDF.type, ECS.ContentStoreView);
         node.addProperty(ECS.store, contentStoreUri);
         node.addProperty(RDFS.comment, new PlainLiteralImpl("An enhanced content store"));
         final List<Condition> conditions = new ArrayList<Condition>();
-        for (UriRef subject : subjects) {
+        for (IRI subject : subjects) {
             addResourceDescription(subject, resultGraph);
             node.addProperty(ECS.subject, subject);
             conditions.add(new WildcardCondition(new PropertyHolder(DC.subject), subject.getUnicodeString()));
         }
-        for (UriRef type : types) {
+        for (IRI type : types) {
             addResourceDescription(type, resultGraph);
             node.addProperty(ECS.type, type);
             conditions.add(new WildcardCondition(new PropertyHolder(RDF.type), type.getUnicodeString()));
@@ -311,7 +309,7 @@ public class ContentStoreImpl implements ContentStore {
 
         final FacetCollector facetCollector = new CountFacetCollector(
                 facetProperties);
-        final List<NonLiteral> matchingNodes = indexService.findResources(conditions, facetCollector);
+        final List<BlankNodeOrIRI> matchingNodes = indexService.findResources(conditions, facetCollector);
         node.addPropertyValue(ECS.contentsCount, matchingNodes.size());
         {
             //facets
@@ -324,10 +322,10 @@ public class ContentStoreImpl implements ContentStore {
             });
             for (int i = 0; i < Math.min(maxFacets, faceList.size()); i++) {
                 Entry<String, Integer> entry = faceList.get(i);
-                final BNode facetResource = new BNode();
+                final BlankNode facetResource = new BlankNode();
                 final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
                 node.addProperty(ECS.facet, facetResource);
-                final UriRef facetValue = new UriRef(entry.getKey());
+                final IRI facetValue = new IRI(entry.getKey());
                 final Integer facetCount = entry.getValue();
                 facetNode.addProperty(ECS.facetValue, facetValue);
                 addResourceDescription(facetValue, resultGraph);
@@ -347,10 +345,10 @@ public class ContentStoreImpl implements ContentStore {
             int maxFacetsAdapted = maxFacets;
             for (int i = 0; i < Math.min(maxFacetsAdapted, faceList.size()); i++) {
                 Entry<String, Integer> entry = faceList.get(i);
-                final BNode facetResource = new BNode();
+                final BlankNode facetResource = new BlankNode();
                 final GraphNode facetNode = new GraphNode(facetResource, resultGraph);
                 node.addProperty(ECS.typeFacet, facetResource);
-                final UriRef facetValue = new UriRef(entry.getKey());
+                final IRI facetValue = new IRI(entry.getKey());
                 if (facetValue.equals(ECS.ContentItem) || facetValue.equals(DISCOBITS.InfoDiscoBit)) {
                     maxFacetsAdapted++;
                     continue;
@@ -361,15 +359,15 @@ public class ContentStoreImpl implements ContentStore {
                 facetNode.addPropertyValue(ECS.facetCount, facetCount);
             }
         }
-        final NonLiteral matchingContentsList = new BNode();
+        final BlankNodeOrIRI matchingContentsList = new BlankNode();
         if (matchingNodes.size() > 0) {
             node.addProperty(ECS.contents, matchingContentsList);
             final RdfList matchingContents = new RdfList(matchingContentsList, resultGraph);
             matchingContents.addAll(matchingNodes.subList(
                     Math.min(offset, matchingNodes.size()),
                     Math.min(offset + items, matchingNodes.size())));
-            for (Resource content : matchingContents) {
-                GraphNode cgContent = graphNodeProvider.getLocal((UriRef) content);
+            for (RDFTerm content : matchingContents) {
+                GraphNode cgContent = graphNodeProvider.getLocal((IRI) content);
                 addRelevantDescription(cgContent, resultGraph, withContent);
 
             }
@@ -386,7 +384,7 @@ public class ContentStoreImpl implements ContentStore {
             resourcePath += '/';
         }
         resourcePath += CONTENT_PREFIX;
-        final UriRef contentUri = new UriRef(resourcePath + digest);
+        final IRI contentUri = new IRI(resourcePath + digest);
         discobitsHandler.put(contentUri, contentType, data);
         return "Posted " + data.length + " bytes, with uri " + contentUri + ": " + contentType;
     }
@@ -394,10 +392,10 @@ public class ContentStoreImpl implements ContentStore {
     //an alternative to retrieveing via entityhub
     @GET
     @Path("entity")
-    public RdfViewable getEntity(@QueryParam("uri") UriRef entityUri) {
-        final MGraph resultMGraph = new SimpleMGraph();
-        addResourceDescription(entityUri, resultMGraph);
-        final GraphNode resultNode = new GraphNode(entityUri, resultMGraph);
+    public RdfViewable getEntity(@QueryParam("uri") IRI entityUri) {
+        final Graph resultGraph = new SimpleGraph();
+        addResourceDescription(entityUri, resultGraph);
+        final GraphNode resultNode = new GraphNode(entityUri, resultGraph);
         resultNode.addPropertyValue(RDFS.comment, "here you go");
         //TODO use own rendering spec
         return new RdfViewable("ContentStoreView", resultNode, ContentStoreImpl.class);
@@ -406,8 +404,8 @@ public class ContentStoreImpl implements ContentStore {
 
     /*   @GET
      @Path("test")
-     public TripleCollection test() {
-     return tcManager.getMGraph(Constants.CONTENT_GRAPH_URI);
+     public Graph test() {
+     return tcManager.getGraph(Constants.CONTENT_GRAPH_URI);
      } */
     @GET
     @Path("reindex")
@@ -421,7 +419,7 @@ public class ContentStoreImpl implements ContentStore {
     @Path(CONTENT_PREFIX + "{hash: .*}")
     public Response getContent(@Context final UriInfo uriInfo) {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
-        final UriRef contentUri = new UriRef(resourcePath);
+        final IRI contentUri = new IRI(resourcePath);
         final byte[] data = discobitsHandler.getData(contentUri);
         final MediaType mediaType = discobitsHandler.getMediaType(contentUri);
         Response.ResponseBuilder responseBuilder =
@@ -434,28 +432,28 @@ public class ContentStoreImpl implements ContentStore {
     @Path(CONTENT_PREFIX + "{hash: .*}.meta")
     public RdfViewable getMeta(@Context final UriInfo uriInfo) {
         final String resourcePath = uriInfo.getAbsolutePath().toString();
-        final UriRef contentUri = new UriRef(resourcePath.substring(0, resourcePath.length() - 5));
+        final IRI contentUri = new IRI(resourcePath.substring(0, resourcePath.length() - 5));
         return getMeta(contentUri);
     }
 
     @GET
     @Path("meta")
-    public RdfViewable getMeta(@QueryParam("iri") final UriRef contentUri) {
+    public RdfViewable getMeta(@QueryParam("iri") final IRI contentUri) {
         final GraphNode nodeWithoutEnhancements = graphNodeProvider.getLocal(contentUri);
         notifyMetaRequest(contentUri);
         return new RdfViewable("Meta", nodeWithoutEnhancements, ContentStoreImpl.class);
-        /*final MGraph enhancementsGraph = tcManager.getMGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
+        /*final Graph enhancementsGraph = tcManager.getGraph(StanbolEnhancerMetadataGenerator.ENHANCEMENTS_GRAPH);
          return new RdfViewable("Meta", new GraphNode(contentUri,
-         new UnionMGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);*/
+         new UnionGraph(nodeWithoutEnhancements.getGraph(), enhancementsGraph)), ContentStoreImpl.class);*/
     }
 
     /**
-     * Add the description of a serviceUri to the specified MGraph using
+     * Add the description of a serviceUri to the specified Graph using
      * SiteManager. The description includes the metadata provided by the
      * SiteManager.
      *
      */
-    private void addResourceDescription(UriRef iri, MGraph mGraph) {
+    private void addResourceDescription(IRI iri, Graph mGraph) {
         final Entity entity = siteManager.getEntity(iri.getUnicodeString());
         if (entity != null) {
             final RdfValueFactory valueFactory = new RdfValueFactory(mGraph);
@@ -467,7 +465,7 @@ public class ContentStoreImpl implements ContentStore {
         //Also add selected properties from content graph
         //Note that we have to be selective or we would add all the documents the
         //entity is a subject of.
-        LockableMGraph cg = contentGraphProvider.getContentGraph();
+        Graph cg = contentGraphProvider.getContentGraph();
         Lock l = cg.getLock().readLock();
         l.lock();
         try {
@@ -487,7 +485,7 @@ public class ContentStoreImpl implements ContentStore {
         }
     }
 
-    private void addRelevantDescription(GraphNode cgContent, MGraph resultGraph, boolean withContent) {
+    private void addRelevantDescription(GraphNode cgContent, Graph resultGraph, boolean withContent) {
         Lock l = cgContent.readLock();
         l.lock();
         try {
@@ -500,11 +498,8 @@ public class ContentStoreImpl implements ContentStore {
                         0, Math.min(PREVIEW_LENGTH, textualContent.length()))
                         .replace('\n', ' ')
                         .replace("\r", "");
-                Language language = null;
-                if (valueLit instanceof PlainLiteral) {
-                    language = ((PlainLiteral) valueLit).getLanguage();
-                }
-                resultGraph.add(new TripleImpl((NonLiteral) cgContent.getNode(), ECS.textPreview,
+                Language language = valueLit.getLanguage();
+                resultGraph.add(new TripleImpl((BlankNodeOrIRI) cgContent.getNode(), ECS.textPreview,
                         new PlainLiteralImpl(preview, language)));
             }
             //}
@@ -518,12 +513,12 @@ public class ContentStoreImpl implements ContentStore {
         }
     }
 
-    private void copyProperties(GraphNode fromNode, MGraph toGraph, UriRef... properties) {
-        for (UriRef property : properties) {
-            Iterator<Resource> objects = fromNode.getObjects(property);
+    private void copyProperties(GraphNode fromNode, Graph toGraph, IRI... properties) {
+        for (IRI property : properties) {
+            Iterator<RDFTerm> objects = fromNode.getObjects(property);
             while (objects.hasNext()) {
-                Resource object = objects.next();
-                toGraph.add(new TripleImpl((NonLiteral) fromNode.getNode(),
+                RDFTerm object = objects.next();
+                toGraph.add(new TripleImpl((BlankNodeOrIRI) fromNode.getNode(),
                         property, object));
             }
         }
@@ -557,7 +552,7 @@ public class ContentStoreImpl implements ContentStore {
         }
     }
 
-    private void notifyMetaRequest(UriRef contentUri) {
+    private void notifyMetaRequest(IRI contentUri) {
         //could do tis async
         for (Interceptor interceptor : interceptors) {
             interceptor.notifyMetaRequest(contentUri);

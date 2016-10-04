@@ -24,15 +24,13 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import javax.ws.rs.core.MediaType;
-import org.apache.clerezza.rdf.core.BNode;
-import org.apache.clerezza.rdf.core.MGraph;
-import org.apache.clerezza.rdf.core.NonLiteral;
-import org.apache.clerezza.rdf.core.Resource;
-import org.apache.clerezza.rdf.core.Triple;
-import org.apache.clerezza.rdf.core.TripleCollection;
-import org.apache.clerezza.rdf.core.UriRef;
+import org.apache.clerezza.commons.rdf.BlankNode;
+import org.apache.clerezza.commons.rdf.BlankNodeOrIRI;
+import org.apache.clerezza.commons.rdf.Graph;
+import org.apache.clerezza.commons.rdf.IRI;
+import org.apache.clerezza.commons.rdf.RDFTerm;
+import org.apache.clerezza.commons.rdf.Triple;
 import org.apache.clerezza.rdf.core.access.EntityAlreadyExistsException;
-import org.apache.clerezza.rdf.core.access.LockableMGraph;
 import org.apache.clerezza.rdf.core.access.TcManager;
 import org.apache.clerezza.rdf.core.access.security.TcAccessController;
 import org.apache.clerezza.rdf.core.access.security.TcPermission;
@@ -92,12 +90,12 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
     /**
      * The graph in which the enancer generated enhanceents are stored
      */
-    final static UriRef ENHANCEMENTS_GRAPH = new UriRef("urn:x-localhost:/ecs-collected-enhancements.graph");
+    final static IRI ENHANCEMENTS_GRAPH = new IRI("urn:x-localhost:/ecs-collected-enhancements.graph");
     
     protected void activate(ComponentContext context) {
         log.info("Enhanced Content Store being activated");
         try {            
-            tcManager.createMGraph(ENHANCEMENTS_GRAPH);
+            tcManager.createGraph(ENHANCEMENTS_GRAPH);
             //now make sure everybody can read from the graph
             //or more precisly, anybody who can read the content-graph
             TcAccessController tca = tcManager.getTcAccessController();
@@ -110,8 +108,8 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
 
     }
     
-    private MGraph getEnhancementGraph() {
-        return tcManager.getMGraph(ENHANCEMENTS_GRAPH);
+    private Graph getEnhancementGraph() {
+        return tcManager.getGraph(ENHANCEMENTS_GRAPH);
     }
     
     public void generate(GraphNode node, byte[] data, MediaType mediaType) {
@@ -121,7 +119,7 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             final ContentSource contentSource = new ByteArraySource(
                     data, mediaType.toString());
             final ContentItem contentItem = contentItemFactory.createContentItem(
-                    (UriRef) node.getNode(), contentSource);
+                    (IRI) node.getNode(), contentSource);
             final String chainName = "default";
             final Chain chain = chainManager.getChain(chainName);
             if (chain == null) {
@@ -143,16 +141,16 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
         }
     }
 
-    private void addSubjects(GraphNode node, TripleCollection metadata) {
+    private void addSubjects(GraphNode node, Graph metadata) {
         final GraphNode enhancementType 
                 = new GraphNode(TechnicalClasses.ENHANCER_ENHANCEMENT, metadata);
-        final Set<UriRef> entities = new HashSet<UriRef>();
+        final Set<IRI> entities = new HashSet<IRI>();
         final Iterator<GraphNode> enhancements = enhancementType.getSubjectNodes(RDF.type);
         while (enhancements.hasNext()) {
             final GraphNode enhhancement = enhancements.next();
-            final Iterator<Resource> referencedEntities = enhhancement.getObjects(Properties.ENHANCER_ENTITY_REFERENCE);
+            final Iterator<RDFTerm> referencedEntities = enhhancement.getObjects(Properties.ENHANCER_ENTITY_REFERENCE);
             while (referencedEntities.hasNext()) {
-                final UriRef entity = (UriRef) referencedEntities.next();
+                final IRI entity = (IRI) referencedEntities.next();
                 node.addProperty(DC.subject, entity);
                 entities.add(entity);
             }
@@ -160,18 +158,18 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
         
         //not just iterating over the added entities but also over the ones 
         //it might already have
-        final Iterator<Resource> subjects = node.getObjects(DC.subject);
-        final Set<Resource> subjectSet = new HashSet<Resource>();
+        final Iterator<RDFTerm> subjects = node.getObjects(DC.subject);
+        final Set<RDFTerm> subjectSet = new HashSet<RDFTerm>();
         while (subjects.hasNext()) {   
-            Resource subject = subjects.next();
+            RDFTerm subject = subjects.next();
             subjectSet.add(subject);
         }
-        for (Resource subject : subjectSet) {
-            if (!(subject instanceof UriRef)) continue;
-            final LockableMGraph mGraph = (LockableMGraph) node.getGraph();
+        for (RDFTerm subject : subjectSet) {
+            if (!(subject instanceof IRI)) continue;
+            final Graph mGraph = node.getGraph();
             //We don't get the entity description directly from metadat
             //as the context there would include all documents this is the subject of
-            addResourceDescription((UriRef) subject, mGraph);
+            addResourceDescription((IRI) subject, mGraph);
             final GraphNode graphNode = new GraphNode(subject, metadata);
             //addDirectProperties or CBD instead of full context might be enough
             //addCBD(graphNode, mGraph);
@@ -180,11 +178,11 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
     }
     
     /**
-     * Add the description of a serviceUri to the specified MGraph using SiteManager.
+     * Add the description of a serviceUri to the specified Graph using SiteManager.
      * The description includes the metadata provided by the SiteManager.
      * 
      */
-    private void addResourceDescription(UriRef iri, MGraph mGraph) {
+    private void addResourceDescription(IRI iri, Graph mGraph) {
         final Entity entity = siteManager.getEntity(iri.getUnicodeString());
         if (entity != null) {
             final RdfValueFactory valueFactory = new RdfValueFactory(mGraph);
@@ -195,25 +193,25 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
         }
     }
 
-    private void addDirectProperties(GraphNode node, MGraph metadata) {
-        Iterator<Triple> triples = metadata.filter((NonLiteral)node.getNode(), null, null);
+    private void addDirectProperties(GraphNode node, Graph metadata) {
+        Iterator<Triple> triples = metadata.filter((BlankNodeOrIRI)node.getNode(), null, null);
         while (triples.hasNext()) {
             Triple t = triples.next();
-            if (!(t.getObject() instanceof BNode)) {
+            if (!(t.getObject() instanceof BlankNode)) {
                 node.addProperty(t.getPredicate(), t.getObject());
             }
         }
     }
 
-    private void addCBD(GraphNode graphNode, LockableMGraph target) {
-        final TripleCollection sourceMGraph = graphNode.getGraph();
-        final Resource node = graphNode.getNode();
-        if (node instanceof NonLiteral) {
-            Set<Resource> objects = new HashSet<Resource>();
+    private void addCBD(GraphNode graphNode, Graph target) {
+        final Graph sourceGraph = graphNode.getGraph();
+        final RDFTerm node = graphNode.getNode();
+        if (node instanceof BlankNodeOrIRI) {
+            Set<RDFTerm> objects = new HashSet<RDFTerm>();
             Lock sl = graphNode.readLock();
             sl.lock();
             try {
-                Iterator<Triple> triples = sourceMGraph.filter((NonLiteral)node, null, null);
+                Iterator<Triple> triples = sourceGraph.filter((BlankNodeOrIRI)node, null, null);
                 while(triples.hasNext()) {
                     final Triple triple = triples.next();
                     target.add(triple);
@@ -222,8 +220,8 @@ public class StanbolEnhancerMetadataGenerator implements MetaDataGenerator {
             } finally {
                 sl.unlock();
             }
-            for (Resource resource : objects) {
-                addCBD(new GraphNode(resource, sourceMGraph), target);
+            for (RDFTerm resource : objects) {
+                addCBD(new GraphNode(resource, sourceGraph), target);
             }
         }
     }

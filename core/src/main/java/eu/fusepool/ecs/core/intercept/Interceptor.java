@@ -16,7 +16,7 @@
 package eu.fusepool.ecs.core.intercept;
 
 import eu.fusepool.ecs.core.Query;
-import org.apache.clerezza.rdf.core.UriRef;
+import org.apache.clerezza.commons.rdf.IRI;
 import org.apache.clerezza.rdf.utils.GraphNode;
 
 /**
@@ -41,6 +41,6 @@ public interface Interceptor {
      * Notifies the interceptor that metdata for a particular IRI has been requested
      * @param iri 
      */
-    public void notifyMetaRequest(UriRef iri);
+    public void notifyMetaRequest(IRI iri);
     
 }

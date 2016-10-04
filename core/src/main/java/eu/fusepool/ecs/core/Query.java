@@ -16,7 +16,7 @@
 package eu.fusepool.ecs.core;
 
 import java.util.Collection;
-import org.apache.clerezza.rdf.core.UriRef;
+import org.apache.clerezza.commons.rdf.IRI;
 
 /**
  *
@@ -24,20 +24,20 @@ import org.apache.clerezza.rdf.core.UriRef;
  */
 public class Query {
 
-    final UriRef contentStoreUri;
-    final UriRef contentStoreViewUri;
-    final Collection<UriRef> subjects;
-    final Collection<UriRef> types;
+    final IRI contentStoreUri;
+    final IRI contentStoreViewUri;
+    final Collection<IRI> subjects;
+    final Collection<IRI> types;
     final Collection<String> searchs;
     final Integer items;
     final Integer offset;
     final Integer maxFacets;
     final boolean withContent;
 
-    public Query(UriRef contentStoreUri, 
-            UriRef contentStoreViewUri, 
-            Collection<UriRef> subjects, 
-            Collection<UriRef> types, 
+    public Query(IRI contentStoreUri, 
+            IRI contentStoreViewUri, 
+            Collection<IRI> subjects, 
+            Collection<IRI> types, 
             Collection<String> searchs, 
             Integer items, Integer offset, Integer maxFacets, 
             boolean withContent) {
@@ -58,7 +58,7 @@ public class Query {
      * 
      * @return 
      */
-    public UriRef getContentStoreUri() {
+    public IRI getContentStoreUri() {
         return contentStoreUri;
     }
 
@@ -68,15 +68,15 @@ public class Query {
      * 
      * @return the contentStoreViewUri
      */
-    public UriRef getContentStoreViewUri() {
+    public IRI getContentStoreViewUri() {
         return contentStoreViewUri;
     }
 
-    public Collection<UriRef> getSubjects() {
+    public Collection<IRI> getSubjects() {
         return subjects;
     }
 
-    public Collection<UriRef> getTypes() {
+    public Collection<IRI> getTypes() {
         return types;
     }
 
